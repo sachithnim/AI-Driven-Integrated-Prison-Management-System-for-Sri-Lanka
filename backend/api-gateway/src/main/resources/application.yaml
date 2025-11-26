@@ -4,3 +4,27 @@ server:
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service-route
+          uri: http://localhost:4005
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        
+        - id: api-docs-auth-route
+          uri: http://localhost:4005
+          predicates:
+            - Path=/api-docs/auth
+          filters:
+            - RewritePath=/api-docs/auth,/v3/api-docs
+
+auth:
+  service:
+    url: http://localhost:4005
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
