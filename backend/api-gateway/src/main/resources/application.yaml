@@ -13,6 +13,22 @@ spring:
             - Path=/auth/**
           filters:
             - StripPrefix=1
+
+        - id: inmate-service-route
+          uri: http://localhost:4007
+          predicates:
+            - Path=/api/inmates/**
+          filters:
+            - StripPrefix=1
+            - JwtValidation
+
+        - id: rehabilitation-service-route
+          uri: http://localhost:4006
+          predicates:
+            - Path=/api/rehabilitation/**
+          filters:
+            - StripPrefix=1
+            - JwtValidation
         
         - id: api-docs-auth-route
           uri: http://localhost:4005
@@ -20,6 +36,20 @@ spring:
             - Path=/api-docs/auth
           filters:
             - RewritePath=/api-docs/auth,/v3/api-docs
+        
+        - id: api-docs-inmate-route
+          uri: http://localhost:4007
+          predicates:
+            - Path=/api-docs/inmates
+          filters:
+            - RewritePath=/api-docs/inmates,/v3/api-docs
+
+        - id: api-docs-rehabilitation-route
+          uri: http://localhost:4006
+          predicates:
+            - Path=/api-docs/rehabilitation
+          filters:
+            - RewritePath=/api-docs/rehabilitation,/v3/api-docs
 
 auth:
   service:
