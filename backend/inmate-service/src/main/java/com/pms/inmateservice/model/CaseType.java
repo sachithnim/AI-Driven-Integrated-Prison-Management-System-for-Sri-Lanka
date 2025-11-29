@@ -1,0 +1,23 @@
+package com.pms.inmateservice.model;
+
+public enum CaseType {
+    MURDER,
+    MANSLAUGHTER,
+    ASSAULT,
+    ROBBERY,
+    BURGLARY,
+    THEFT,
+    DRUG_TRAFFICKING,
+    DRUG_POSSESSION,
+    FRAUD,
+    EMBEZZLEMENT,
+    RAPE,
+    SEXUAL_ASSAULT,
+    KIDNAPPING,
+    ARSON,
+    TERRORISM,
+    CYBERCRIME,
+    DOMESTIC_VIOLENCE,
+    HUMAN_TRAFFICKING,
+    OTHER
+}
