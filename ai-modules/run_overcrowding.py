@@ -1,0 +1,24 @@
+"""
+Overcrowding Module Entry Point (Placeholder)
+TODO: Implement overcrowding AI service
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from modules.shared.config import shared_settings
+
+if __name__ == "__main__":
+    print("=" * 70)
+    print("OVERCROWDING MODULE - NOT YET IMPLEMENTED")
+    print("=" * 70)
+    print(f"This module will run on port {shared_settings.OVERCROWDING_PORT}")
+    print()
+    print("TODO: Implement features:")
+    print("  - Capacity forecasting")
+    print("  - Population trend analysis")
+    print("  - Transfer recommendations")
+    print("  - Resource allocation optimization")
+    print("=" * 70)
