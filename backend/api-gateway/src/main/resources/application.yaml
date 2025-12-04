@@ -25,7 +25,7 @@ spring:
             maxAge: 3600
       routes:
         - id: auth-service-route
-          uri: http://localhost:4005
+          uri: http://auth-service:4005
           predicates:
             - Path=/auth/**
           filters:
@@ -48,7 +48,7 @@ spring:
             - JwtValidation
         
         - id: api-docs-auth-route
-          uri: http://localhost:4005
+          uri: http://auth-service:4005
           predicates:
             - Path=/api-docs/auth
           filters:
@@ -70,7 +70,7 @@ spring:
 
 auth:
   service:
-    url: http://localhost:4005
+    url: http://auth-service:4005
 
 logging:
   level:
