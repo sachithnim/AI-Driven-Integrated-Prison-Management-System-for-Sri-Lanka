@@ -75,23 +75,23 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
               <img src={logo} alt="Logo" className="h-20 w-auto" />
             </div>
-            <h1 className="text-3xl font-bold text-dark-900 mb-2">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Prison Management System
             </h1>
-            <p className="text-dark-600">
-              Sign in to access your dashboard
+            <p className="text-slate-600 font-medium">
+              Secure Access Portal
             </p>
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+          <div className="bg-white rounded-xl shadow-xl p-8 border border-slate-200 hover:shadow-2xl transition-shadow">
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
                 type="text"
@@ -118,7 +118,7 @@ export default function SignIn() {
               <div className="flex items-center justify-end text-sm">
                 <a
                   href="#"
-                  className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
                 >
                   Forgot password?
                 </a>
@@ -137,7 +137,7 @@ export default function SignIn() {
           </div>
 
           {/* Footer */}
-          <p className="text-center text-sm text-dark-500 mt-6">
+          <p className="text-center text-sm text-slate-500 mt-6">
             Secure access to prison management services
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function SignIn() {
 
       {/* Right Side - Background Image */}
       <div className="hidden lg:flex lg:flex-1 relative">
-        <div className="absolute inset-0 bg-dark-900/60 z-10"></div>
+        <div className="absolute inset-0 bg-slate-900/70 z-10"></div>
         <img
           src={prisonImage}
           alt="Prison"

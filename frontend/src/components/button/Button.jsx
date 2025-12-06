@@ -12,9 +12,9 @@ export default function Button({
   const baseClasses = 'flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 outline-none relative overflow-hidden';
   
   const variantClasses = {
-    primary: 'btn-gradient text-white shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:-translate-y-0.5 active:translate-y-0',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
-    outline: 'border-2 border-primary-500 text-primary-500 hover:bg-primary-50',
+    primary: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0',
+    secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
     danger: 'bg-red-600 text-white hover:bg-red-700',
   };
   

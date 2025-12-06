@@ -4,10 +4,13 @@ import { RouterProvider } from 'react-router-dom'
 import './index.css'
 import { router } from './router/index.jsx'
 import { Toaster } from "react-hot-toast";
+import { CameraProvider } from './context/CameraContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
-    <Toaster position="bottom-right" reverseOrder={false} />
+    <CameraProvider>
+      <RouterProvider router={router} />
+      <Toaster position="bottom-right" reverseOrder={false} />
+    </CameraProvider>
   </StrictMode>,
 )

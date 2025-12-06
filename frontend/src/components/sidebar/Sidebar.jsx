@@ -9,13 +9,64 @@ import {
   X,
   ChevronLeft,
   UserPlus,
+  CameraIcon,
+  Shield,
+  AlertCircle,
+  FileText,
+  Settings,
+  BarChart3,
 } from "lucide-react";
 
 const sidebarItems = [
   {
-    name: "Dashboard",
-    path: "/",
-    icon: LayoutDashboard,
+    section: "MAIN",
+    items: [
+      {
+        name: "Dashboard",
+        path: "/",
+        icon: LayoutDashboard,
+      },
+    ]
+  },
+  {
+    section: "MANAGEMENT",
+    items: [
+      {
+        name: "Inmates",
+        path: "/inmates",
+        icon: Users,
+      },
+      {
+        name: "Staff",
+        path: "/staff",
+        icon: UserPlus,
+      },
+      {
+        name: "Security & Monitoring",
+        path: "/camera",
+        icon: CameraIcon,
+      },
+    ]
+  },
+  {
+    section: "OPERATIONS",
+    items: [
+      {
+        name: "Incidents",
+        path: "/incidents",
+        icon: AlertCircle,
+      },
+      {
+        name: "Reports",
+        path: "/reports",
+        icon: FileText,
+      },
+      {
+        name: "Analytics",
+        path: "/analytics",
+        icon: BarChart3,
+      },
+    ]
   },
 ];
 
@@ -46,12 +97,12 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
       `}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-2 border-b border-gray-200">
-          <div className="flex items-center mx-auto gap-2">
-           
-            <img src={logo} alt="Logo" className="h-20 w-auto" />
+        <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-slate-800 to-slate-700">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="Logo" className="h-10 w-auto" />
             <div>
-              <h2 className="text-gray-800">Prison Management System</h2>
+              <h2 className="text-white font-bold text-sm">PMS</h2>
+              <p className="text-gray-300 text-xs">Prison Management</p>
             </div>
           </div>
 
@@ -59,78 +110,80 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
           {isMobile && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+              className="p-2 rounded-lg hover:bg-slate-600 transition-colors lg:hidden"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-white" />
             </button>
           )}
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {sidebarItems
-            .map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={isMobile ? onClose : undefined}
-                  className={({ isActive }) => `
-                  flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group
-                  ${
-                    isActive
-                      ? "bg-gradient-to-r from-primary-800 to-primary-600 text-white shadow-lg shadow-primary-500/30"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"
-                  }
-                `}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Icon
-                        className={`w-5 h-5 transition-transform duration-200 ${
-                          isActive
-                            ? "text-white"
-                            : "text-gray-500 group-hover:text-primary-600"
-                        } group-hover:scale-110`}
-                      />
-                      <span className="font-medium">{item.name}</span>
-                    </>
-                  )}
-                </NavLink>
-              );
-            })}
+        <nav className="flex-1 overflow-y-auto p-4">
+          {sidebarItems.map((section, idx) => (
+            <div key={idx} className="mb-6">
+              {/* Section Label */}
+              <div className="px-3 py-2 mb-2">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  {section.section}
+                </p>
+              </div>
+
+              {/* Section Items */}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={isMobile ? onClose : undefined}
+                      className={({ isActive }) => `
+                      flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
+                      ${
+                        isActive
+                          ? "bg-slate-700 text-white shadow-md"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-slate-700"
+                      }
+                    `}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            className={`w-5 h-5 transition-transform duration-200 flex-shrink-0 ${
+                              isActive
+                                ? "text-white"
+                                : "text-gray-400 group-hover:text-slate-700"
+                            }`}
+                          />
+                          <span className="font-medium text-sm">{item.name}</span>
+                          {isActive && (
+                            <div className="ml-auto w-1 h-6 bg-white rounded-full"></div>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-200">
-          {/* <NavLink
-            to="/profile"
-            className="mb-4 block"
-            onClick={isMobile ? onClose : undefined}
-          >
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-800 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                A
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate">
-                  {currentUser?.name}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {currentUser?.email}
-                </p>
-              </div>
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-yellow-600" />
+              <span className="text-xs font-semibold text-yellow-700">Security Level</span>
             </div>
-          </NavLink> */}
-          <div className="mt-4">
-            <button
-              className="w-full px-4 py-2 bg-slate-300 text-black rounded-xl hover:bg-slate-400 transition-colors font-semibold"
-              onClick={logout}
-            >
-              Sign Out
-            </button>
+            <span className="text-xs font-bold text-yellow-600">HIGH</span>
           </div>
+          <button
+            className="w-full px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors font-semibold text-sm shadow-md"
+            onClick={logout}
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     </>

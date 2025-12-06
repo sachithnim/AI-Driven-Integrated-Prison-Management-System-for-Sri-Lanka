@@ -68,7 +68,7 @@ export default function HomeLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header onMenuClick={handleMenuClick} currentUser={currentUser} />
 
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 p-2 lg:p-4 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <Outlet context={{ currentUser }} />
           </div>
