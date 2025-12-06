@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.logging import logger
-from api import health, recommendation, analysis, scoring
+from api import health, recommendation, analysis, scoring, data
 
 
 def create_app() -> FastAPI:
@@ -55,12 +55,25 @@ def create_app() -> FastAPI:
         scoring.router,
         prefix=settings.API_V1_PREFIX
     )
+    app.include_router(
+        data.router,
+        prefix=settings.API_V1_PREFIX
+    )
     
     # Startup event
     @app.on_event("startup")
     async def startup_event():
         logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
         logger.info(f"Documentation available at http://{settings.HOST}:{settings.PORT}/docs")
+        
+        # Initialize models on startup
+        if settings.ENABLE_MODEL_TRAINING:
+            logger.info("Checking for pre-trained models...")
+            try:
+                from utils.model_trainer import train_models_if_needed
+                train_models_if_needed()
+            except Exception as e:
+                logger.warning(f"Could not initialize models: {e}")
     
     # Shutdown event
     @app.on_event("shutdown")

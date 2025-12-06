@@ -10,9 +10,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from core.config import settings
-from modules.shared.logging import setup_module_logging
-
-
-# Use shared logging configuration
-logger = setup_module_logging(settings.MODULE_NAME)
+# Import with fallbacks
+try:
+    from core.config import settings
+    from modules.shared.logging import setup_module_logging
+    logger = setup_module_logging(settings.MODULE_NAME)
+except (ImportError, ModuleNotFoundError):
+    # Fallback logging setup
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger("rehabilitation")

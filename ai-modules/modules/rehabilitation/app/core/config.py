@@ -7,10 +7,27 @@ from typing import Optional
 import sys
 from pathlib import Path
 
-# Add parent directories to path for shared imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
-from modules.shared.config import shared_settings
+# Try to import shared settings with fallback
+try:
+    from modules.shared.config import shared_settings
+except ModuleNotFoundError:
+    # Fallback when running from rehabilitation directory
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+    try:
+        from modules.shared.config import shared_settings
+    except ModuleNotFoundError:
+        # If still not found, use default values
+        class SharedSettings:
+            HOST = "0.0.0.0"
+            REHABILITATION_PORT = 8001
+            DEBUG = False
+            API_V1_PREFIX = "/api/v1"
+            CORS_ORIGINS = ["*"]
+            CORS_ALLOW_CREDENTIALS = True
+            CORS_ALLOW_METHODS = ["*"]
+            CORS_ALLOW_HEADERS = ["*"]
+            LOG_LEVEL = "INFO"
+        shared_settings = SharedSettings()
 
 
 class Settings(BaseSettings):
@@ -39,9 +56,19 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = shared_settings.LOG_LEVEL
     
-    # ML Model paths (for future use)
+    # ML Model paths
     MODEL_PATH: Optional[str] = None
     NLP_MODEL_PATH: Optional[str] = None
+    
+    # Auth Service Integration
+    AUTH_SERVICE_URL: str = "http://localhost:4005"
+    JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_HOURS: int = 24
+    
+    # Feature flags
+    REQUIRE_AUTH: bool = False  # Set to True to enforce authentication
+    ENABLE_MODEL_TRAINING: bool = True
     
     class Config:
         env_file = ".env"
@@ -49,3 +76,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
