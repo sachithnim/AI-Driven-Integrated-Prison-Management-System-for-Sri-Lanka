@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     MODEL_PATH: Optional[str] = None
     NLP_MODEL_PATH: Optional[str] = None
     
+    # OpenAI Integration (v2.0)
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4-turbo-preview"
+    OPENAI_MAX_TOKENS: int = 300
+    OPENAI_TEMPERATURE: float = 0.7
+    
     # Auth Service Integration
     AUTH_SERVICE_URL: str = "http://localhost:4005"
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -69,6 +75,7 @@ class Settings(BaseSettings):
     # Feature flags
     REQUIRE_AUTH: bool = False  # Set to True to enforce authentication
     ENABLE_MODEL_TRAINING: bool = True
+    ENABLE_OPENAI: bool = True  # Enable/disable OpenAI features
     
     class Config:
         env_file = ".env"

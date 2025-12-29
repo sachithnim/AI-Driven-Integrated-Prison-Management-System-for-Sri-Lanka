@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.logging import logger
-from api import health, recommendation, analysis, scoring, data
+from api import health, recommendation, analysis, scoring, data, upload, predictions
 
 
 def create_app() -> FastAPI:
@@ -59,6 +59,16 @@ def create_app() -> FastAPI:
         data.router,
         prefix=settings.API_V1_PREFIX
     )
+    # New: Dataset upload and management
+    app.include_router(
+        upload.router,
+        prefix=settings.API_V1_PREFIX
+    )
+    # New: AI prediction endpoints
+    app.include_router(
+        predictions.router,
+        prefix=settings.API_V1_PREFIX
+    )
     
     # Startup event
     @app.on_event("startup")
@@ -66,7 +76,15 @@ def create_app() -> FastAPI:
         logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
         logger.info(f"Documentation available at http://{settings.HOST}:{settings.PORT}/docs")
         
-        # Initialize models on startup
+        # Load prediction models
+        try:
+            from api.predictions import load_models
+            load_models()
+            logger.info("✓ Prediction models loaded successfully")
+        except Exception as e:
+            logger.warning(f"⚠ Could not load prediction models: {e}")
+        
+        # Initialize models on startup if needed
         if settings.ENABLE_MODEL_TRAINING:
             logger.info("Checking for pre-trained models...")
             try:
@@ -81,3 +99,16 @@ def create_app() -> FastAPI:
         logger.info(f"Shutting down {settings.APP_NAME}")
     
     return app
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    app = create_app()
+    
+    uvicorn.run(
+        app,
+        host=settings.HOST,
+        port=settings.PORT,
+        log_level=settings.LOG_LEVEL.lower()
+    )

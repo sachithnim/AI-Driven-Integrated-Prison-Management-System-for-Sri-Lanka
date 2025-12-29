@@ -3,7 +3,25 @@ Scoring and prediction schemas
 """
 
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, List, Optional
+
+
+class InitialAssessmentRequest(BaseModel):
+    """Request model for initial inmate assessment"""
+    crimeDescription: str = Field(..., description="Description of the crime")
+    riskHistory: List[str] = Field(default=[], description="History of risk incidents")
+    notes: str = Field(default="", description="Additional notes")
+    age: Optional[int] = Field(default=30, description="Age of the inmate")
+    sentenceDurationMonths: int = Field(..., description="Sentence duration in months")
+    caseType: str = Field(..., description="Type of case")
+
+
+class InitialAssessmentResponse(BaseModel):
+    """Response model for initial inmate assessment"""
+    behavior_score: float = Field(..., ge=0, le=100, description="Initial behavior score (0-100)")
+    discipline_score: float = Field(..., ge=0, le=100, description="Initial discipline score (0-100)")
+    risk_score: float = Field(..., ge=0, le=1, description="Initial risk score (0-1)")
+    reasoning: str = Field(..., description="AI reasoning for the scores")
 
 
 class EarlyReleaseScoreResponse(BaseModel):
