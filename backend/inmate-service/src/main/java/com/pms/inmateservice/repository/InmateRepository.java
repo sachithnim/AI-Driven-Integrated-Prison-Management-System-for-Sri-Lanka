@@ -15,8 +15,6 @@ import java.util.Optional;
 @Repository
 public interface InmateRepository extends JpaRepository<Inmate, Long> {
 
-    Optional<Inmate> findByBookingNumber(String bookingNumber);
-
     List<Inmate> findByStatus(InmateStatus status);
 
     List<Inmate> findBySecurityLevel(SecurityLevel securityLevel);
@@ -28,7 +26,6 @@ public interface InmateRepository extends JpaRepository<Inmate, Long> {
     @Query("SELECT i FROM Inmate i WHERE " +
            "LOWER(i.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(i.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(i.bookingNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(i.nic) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<Inmate> searchInmates(@Param("searchTerm") String searchTerm);
 
@@ -58,4 +55,9 @@ public interface InmateRepository extends JpaRepository<Inmate, Long> {
 
     @Query("SELECT DISTINCT i.currentFacility FROM Inmate i WHERE i.currentFacility IS NOT NULL")
     List<String> findAllFacilities();
+
+    @Query("SELECT new com.pms.inmateservice.dto.CellDTO(i.block, i.cellNumber, 4, COUNT(i)) " +
+           "FROM Inmate i WHERE i.block IS NOT NULL AND i.cellNumber IS NOT NULL " +
+           "GROUP BY i.block, i.cellNumber")
+    List<com.pms.inmateservice.dto.CellDTO> getCellOccupancy();
 }

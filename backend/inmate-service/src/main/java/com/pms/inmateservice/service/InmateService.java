@@ -8,9 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,23 +23,59 @@ import java.util.stream.Collectors;
 public class InmateService {
 
     private final InmateRepository inmateRepository;
+    private final CellRepository cellRepository;
     private final BehaviorIncidentRepository behaviorIncidentRepository;
     private final VisitorLogRepository visitorLogRepository;
     private final EmergencyContactRepository emergencyContactRepository;
     private final WorkAssignmentRepository workAssignmentRepository;
     private final EducationProgramRepository educationProgramRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final WebClient.Builder webClientBuilder;
 
     @Transactional
     public InmateResponseDTO createInmate(InmateRequestDTO requestDTO) {
-        log.info("Creating new inmate: {}", requestDTO.getBookingNumber());
-
-        // Check if booking number already exists
-        if (inmateRepository.findByBookingNumber(requestDTO.getBookingNumber()).isPresent()) {
-            throw new RuntimeException("Inmate with booking number " + requestDTO.getBookingNumber() + " already exists");
-        }
+        log.info("Creating new inmate: {} {}", requestDTO.getFirstName(), requestDTO.getLastName());
 
         Inmate inmate = mapToEntity(requestDTO);
+        
+        // Call AI Service for Initial Assessment
+        try {
+            Map<String, Object> aiRequest = new HashMap<>();
+            aiRequest.put("crimeDescription", requestDTO.getCrimeDescription());
+            aiRequest.put("riskHistory", requestDTO.getRiskHistory());
+            aiRequest.put("notes", requestDTO.getNotes());
+            // Calculate age if not provided or calculate from DOB
+            int age = 30;
+            if (requestDTO.getDateOfBirth() != null) {
+                age = java.time.Period.between(requestDTO.getDateOfBirth(), LocalDate.now()).getYears();
+            }
+            aiRequest.put("age", age);
+            aiRequest.put("sentenceDurationMonths", requestDTO.getSentenceDurationMonths());
+            aiRequest.put("caseType", requestDTO.getCaseType().toString());
+
+            Map response = webClientBuilder.build()
+                    .post()
+                    .uri("http://localhost:8001/api/v1/scoring/initial-assessment")
+                    .bodyValue(aiRequest)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            if (response != null) {
+                inmate.setBehaviorScore(Double.valueOf(response.get("behavior_score").toString()));
+                inmate.setDisciplineScore(Double.valueOf(response.get("discipline_score").toString()));
+                inmate.setRiskScore(Double.valueOf(response.get("risk_score").toString()));
+                inmate.setAiReasoning((String) response.get("reasoning"));
+            }
+        } catch (Exception e) {
+            log.error("Failed to get AI assessment", e);
+            // Set defaults if AI fails
+            inmate.setBehaviorScore(70.0);
+            inmate.setDisciplineScore(70.0);
+            inmate.setRiskScore(0.5);
+            inmate.setAiReasoning("AI Assessment Failed: " + e.getMessage());
+        }
+
         inmate.setStatus(InmateStatus.ACTIVE);
         inmate.setCreatedAt(java.time.LocalDateTime.now());
 
@@ -61,14 +101,6 @@ public class InmateService {
         response.setTotalVisits((long) visitorLogRepository.findByInmateId(id).size());
 
         return response;
-    }
-
-    @Transactional(readOnly = true)
-    public InmateResponseDTO getInmateByBookingNumber(String bookingNumber) {
-        log.info("Fetching inmate with booking number: {}", bookingNumber);
-        Inmate inmate = inmateRepository.findByBookingNumber(bookingNumber)
-                .orElseThrow(() -> new RuntimeException("Inmate not found with booking number: " + bookingNumber));
-        return mapToResponseDTO(inmate);
     }
 
     @Transactional(readOnly = true)
@@ -218,7 +250,6 @@ public class InmateService {
     }
 
     private void updateInmateFromDTO(Inmate inmate, InmateRequestDTO dto) {
-        inmate.setBookingNumber(dto.getBookingNumber());
         inmate.setFirstName(dto.getFirstName());
         inmate.setLastName(dto.getLastName());
         inmate.setMiddleName(dto.getMiddleName());
@@ -226,7 +257,6 @@ public class InmateService {
         inmate.setGender(dto.getGender());
         inmate.setNationality(dto.getNationality());
         inmate.setNic(dto.getNic());
-        inmate.setAddress(dto.getAddress());
         inmate.setContactNumber(dto.getContactNumber());
         
         inmate.setCaseType(dto.getCaseType());
@@ -241,8 +271,18 @@ public class InmateService {
         
         inmate.setSecurityLevel(dto.getSecurityLevel());
         inmate.setCurrentFacility(dto.getCurrentFacility());
-        inmate.setBlock(dto.getBlock());
-        inmate.setCellNumber(dto.getCellNumber());
+        
+        if (dto.getCellId() != null) {
+            Cell cell = cellRepository.findById(dto.getCellId())
+                    .orElseThrow(() -> new RuntimeException("Cell not found with ID: " + dto.getCellId()));
+            inmate.setCell(cell);
+            inmate.setBlock(cell.getBlock());
+            inmate.setCellNumber(cell.getCellNumber());
+        } else {
+            inmate.setBlock(dto.getBlock());
+            inmate.setCellNumber(dto.getCellNumber());
+        }
+        
         inmate.setAdmissionDate(dto.getAdmissionDate());
         
         inmate.setHeight(dto.getHeight());
@@ -277,7 +317,6 @@ public class InmateService {
     private InmateResponseDTO mapToResponseDTO(Inmate inmate) {
         InmateResponseDTO dto = new InmateResponseDTO();
         dto.setId(inmate.getId());
-        dto.setBookingNumber(inmate.getBookingNumber());
         dto.setFirstName(inmate.getFirstName());
         dto.setLastName(inmate.getLastName());
         dto.setMiddleName(inmate.getMiddleName());
@@ -286,7 +325,6 @@ public class InmateService {
         dto.setAge(inmate.getAge());
         dto.setGender(inmate.getGender());
         dto.setNationality(inmate.getNationality());
-        dto.setNic(inmate.getNic());
         dto.setAddress(inmate.getAddress());
         dto.setContactNumber(inmate.getContactNumber());
         
@@ -338,6 +376,12 @@ public class InmateService {
         dto.setCreatedBy(inmate.getCreatedBy());
         dto.setUpdatedBy(inmate.getUpdatedBy());
         dto.setNotes(inmate.getNotes());
+        
+        // AI Scores
+        dto.setBehaviorScore(inmate.getBehaviorScore());
+        dto.setDisciplineScore(inmate.getDisciplineScore());
+        dto.setRiskScore(inmate.getRiskScore());
+        dto.setAiReasoning(inmate.getAiReasoning());
         
         return dto;
     }

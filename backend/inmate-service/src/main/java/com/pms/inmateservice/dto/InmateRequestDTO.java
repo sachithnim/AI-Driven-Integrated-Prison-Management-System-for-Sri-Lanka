@@ -12,9 +12,6 @@ import java.time.LocalDate;
 @Data
 public class InmateRequestDTO {
 
-    @NotBlank(message = "Booking number is required")
-    private String bookingNumber;
-
     @NotBlank(message = "First name is required")
     private String firstName;
 
@@ -47,6 +44,8 @@ public class InmateRequestDTO {
     private LocalDate sentenceEndDate;
 
     private LocalDate paroleEligibilityDate;
+    
+    private Long cellId; // Optional: ID of the cell to assign
 
     @NotNull(message = "Sentence duration is required")
     private Integer sentenceDurationMonths;

@@ -25,7 +25,7 @@ public class InmateController {
     @PostMapping
     @Operation(summary = "Create new inmate", description = "Register a new inmate in the system")
     public ResponseEntity<InmateResponseDTO> createInmate(@Valid @RequestBody InmateRequestDTO requestDTO) {
-        log.info("REST request to create inmate: {}", requestDTO.getBookingNumber());
+        log.info("REST request to create inmate: {} {}", requestDTO.getFirstName(), requestDTO.getLastName());
         InmateResponseDTO response = inmateService.createInmate(requestDTO);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -35,14 +35,6 @@ public class InmateController {
     public ResponseEntity<InmateResponseDTO> getInmateById(@PathVariable Long id) {
         log.info("REST request to get inmate with ID: {}", id);
         InmateResponseDTO response = inmateService.getInmateById(id);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/booking/{bookingNumber}")
-    @Operation(summary = "Get inmate by booking number", description = "Retrieve inmate information by booking number")
-    public ResponseEntity<InmateResponseDTO> getInmateByBookingNumber(@PathVariable String bookingNumber) {
-        log.info("REST request to get inmate with booking number: {}", bookingNumber);
-        InmateResponseDTO response = inmateService.getInmateByBookingNumber(bookingNumber);
         return ResponseEntity.ok(response);
     }
 

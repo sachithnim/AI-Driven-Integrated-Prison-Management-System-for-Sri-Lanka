@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 public class InmateResponseDTO {
 
     private Long id;
-    private String bookingNumber;
     private String firstName;
     private String lastName;
     private String middleName;
@@ -43,6 +42,13 @@ public class InmateResponseDTO {
     private String currentFacility;
     private String block;
     private String cellNumber;
+    
+    // AI Scores
+    private Double behaviorScore;
+    private Double disciplineScore;
+    private Double riskScore;
+    private String aiReasoning;
+
     private LocalDate admissionDate;
     private LocalDate releaseDate;
 
