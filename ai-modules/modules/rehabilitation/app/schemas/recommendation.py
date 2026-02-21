@@ -33,9 +33,17 @@ class ProgramRecommendation(BaseModel):
     reason: str = Field(..., description="Reason for recommendation")
 
 
+class StructuredPlan(BaseModel):
+    """Detailed AI-generated rehabilitation plan"""
+    short_term_goals: List[str] = Field(..., description="Goals for first 3 months")
+    long_term_goals: List[str] = Field(..., description="Goals for release/reintegration")
+    weekly_schedule: List[Dict[str, str]] = Field(..., description="Sample weekly routine")
+    key_milestones: List[Dict[str, str]] = Field(..., description="Milestones to track progress")
+    
 class RecommendationResponse(BaseModel):
     """Response model with program recommendations"""
     programs: List[ProgramRecommendation] = Field(..., description="List of recommended programs")
+    structured_plan: Optional[StructuredPlan] = Field(None, description="AI-generated detailed plan")
     explanation: str = Field(..., description="Overall explanation")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence level (0-1)")
     

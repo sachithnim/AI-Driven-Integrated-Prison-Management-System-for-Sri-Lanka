@@ -12,61 +12,61 @@ import string
 
 
 class RealisticDatasetGenerator:
-    """Generates comprehensive realistic rehabilitation datasets"""
+    """Generates comprehensive realistic rehabilitation datasets with deep Sri Lankan context"""
     
-    # Crime types with typical sentence lengths and rehabilitation needs
+    # Enhanced Crime Profiles with Sri Lankan Context
     CRIME_PROFILES = {
         "drug_trafficking": {
-            "avg_sentence_months": 36, "substance_abuse": 0.9, "mental_health": 0.4,
-            "violence_risk": 0.3, "education_need": 0.6
+            "avg_sentence_months": 60, "substance_abuse": 0.95, "mental_health": 0.4,
+            "violence_risk": 0.4, "education_need": 0.6, "typical_background": "Financial hardship, incomplete education"
         },
         "drug_possession": {
-            "avg_sentence_months": 18, "substance_abuse": 0.8, "mental_health": 0.5,
-            "violence_risk": 0.2, "education_need": 0.5
+            "avg_sentence_months": 12, "substance_abuse": 0.9, "mental_health": 0.6,
+            "violence_risk": 0.2, "education_need": 0.5, "typical_background": "Addiction history, urban poverty"
+        },
+        "financial_fraud": {
+            "avg_sentence_months": 36, "substance_abuse": 0.1, "mental_health": 0.3,
+            "violence_risk": 0.05, "education_need": 0.2, "typical_background": "White collar, highly educated, debt issues"
         },
         "assault": {
-            "avg_sentence_months": 24, "substance_abuse": 0.3, "mental_health": 0.6,
-            "violence_risk": 0.8, "education_need": 0.4
+            "avg_sentence_months": 24, "substance_abuse": 0.5, "mental_health": 0.7,
+            "violence_risk": 0.85, "education_need": 0.4, "typical_background": "History of conflict, impulsive behavior"
         },
         "robbery": {
-            "avg_sentence_months": 30, "substance_abuse": 0.4, "mental_health": 0.3,
-            "violence_risk": 0.6, "education_need": 0.7
+            "avg_sentence_months": 48, "substance_abuse": 0.6, "mental_health": 0.4,
+            "violence_risk": 0.7, "education_need": 0.8, "typical_background": "Unemployed, gang association"
         },
-        "fraud": {
-            "avg_sentence_months": 20, "substance_abuse": 0.1, "mental_health": 0.2,
-            "violence_risk": 0.1, "education_need": 0.3
-        },
-        "burglary": {
-            "avg_sentence_months": 22, "substance_abuse": 0.5, "mental_health": 0.3,
-            "violence_risk": 0.4, "education_need": 0.6
-        },
-        "domestic_violence": {
-            "avg_sentence_months": 16, "substance_abuse": 0.5, "mental_health": 0.7,
-            "violence_risk": 0.9, "education_need": 0.3
-        },
-        "theft": {
-            "avg_sentence_months": 12, "substance_abuse": 0.4, "mental_health": 0.2,
-            "violence_risk": 0.2, "education_need": 0.5
-        },
+        "civil_dispute": {
+            "avg_sentence_months": 12, "substance_abuse": 0.2, "mental_health": 0.4,
+            "violence_risk": 0.1, "education_need": 0.3, "typical_background": "Land disputes, family conflict"
+        }
     }
     
-    # Rehabilitation programs
+    # Sri Lankan Specific Rehabilitation Programs
     PROGRAMS = {
-        "substance_abuse_intensive": "Substance Abuse",
-        "substance_abuse_standard": "Substance Abuse",
-        "mental_health_therapy": "Mental Health",
+        # Vocational (NVQ Aligned)
+        "vocational_carpentry_nvq3": "Vocational (NVQ L3)",
+        "vocational_masonry_nvq3": "Vocational (NVQ L3)",
+        "vocational_ac_repair_nvq4": "Vocational (NVQ L4)",
+        "vocational_agriculture_modern": "Vocational (Agriculture)",
+        "vocational_it_basics": "Vocational (IT)",
+        "vocational_motor_mechanic_nvq4": "Vocational (NVQ L4)",
+        
+        # Wellness & Cultural
+        "rehab_bhavana_meditation": "Spiritual/Cultural",
+        "rehab_art_therapy": "Therapeutic",
+        "rehab_kandyan_dancing": "Cultural",
+        "rehab_yoga_mindfulness": "Wellness",
+        
+        # Clinical / Behavioral
+        "substance_abuse_intensive": "Clinical",
         "anger_management": "Behavioral",
-        "cognitive_behavioral": "Behavioral",
-        "vocational_carpentry": "Vocational",
-        "vocational_welding": "Vocational",
-        "vocational_it": "Vocational",
-        "education_basic": "Education",
-        "education_ged": "Education",
-        "family_counseling": "Counseling",
+        "cbt_therapy": "Psychological",
+        "family_reintegration": "Social"
     }
     
-    FACILITIES = ["Colombo_Main", "Kandy_Central", "Galle_Regional", "Jaffna_North", "Anuradhapura_Central"]
-    ZONES = ["Western", "Central", "Southern", "Northern", "North_Central"]
+    FACILITIES = ["Welikada", "Mahara", "Bogambara", "Angunakolapelessa", "Pallekele_Open_Camp", "Weerawila_Open_Camp"]
+    ZONES = ["Western", "Western", "Central", "Southern", "Central", "Southern"]
     
     def __init__(self, seed=42):
         """Initialize with random seed for reproducibility"""
@@ -74,8 +74,7 @@ class RealisticDatasetGenerator:
         np.random.seed(seed)
     
     def generate_inmate_id(self, index: int) -> str:
-        """Generate unique inmate ID"""
-        return f"INM{str(index).zfill(6)}"
+        return f"SL-INM-{datetime.now().year}-{str(index).zfill(5)}"
     
     def generate_booking_number(self, index: int) -> str:
         """Generate booking number"""
@@ -135,15 +134,32 @@ class RealisticDatasetGenerator:
             facility = random.choice(self.FACILITIES)
             zone = self.ZONES[self.FACILITIES.index(facility)]
             
+            # Sri Lankan Education System
+            education_levels = ["Grade 5", "Grade 8", "GCE O/L (Eq)", "GCE O/L (Pass)", "GCE A/L (Studying)", "GCE A/L (Pass)", "Diploma/NVQ", "Degree"]
+            education_idx = min(len(education_levels)-1, max(0, int(np.random.normal(2 if crime_profile['education_need'] > 0.5 else 4, 1.5))))
+            education_level = education_levels[education_idx]
+            
+            # Family Background
+            marital_status = np.random.choice(["Single", "Married", "Divorced", "Separated"], p=[0.4, 0.4, 0.1, 0.1])
+            children = np.random.choice([0, 1, 2, 3, 4], p=[0.4, 0.2, 0.2, 0.1, 0.1]) if age > 25 else 0
+            
+            # Detailed Background check
+            background_notes = f"{crime_profile.get('typical_background', 'Standard profile')}. " \
+                             f"{'Family support available.' if random.random() > 0.4 else 'Limited family support.'} " \
+                             f"{'Financial struggles prominent.' if random.random() > 0.6 else ''}"
+
             record = {
                 "inmate_id": self.generate_inmate_id(i),
                 "booking_number": self.generate_booking_number(i),
-                "first_name": f"FirstName{i}",
-                "last_name": f"LastName{i}",
+                "first_name": f"Inmate_{i}_First",
+                "last_name": f"Inmate_{i}_Last",
                 "date_of_birth": (datetime.now() - timedelta(days=age * 365)).date(),
                 "gender": gender,
                 "age": age,
-                "education_level": random.choice(["Elementary", "High School", "GED", "Some College", "College"]),
+                "education_level": education_level,
+                "marital_status": marital_status,
+                "children_count": int(children),
+                "background_summary": background_notes,
                 "sentence_length_months": sentence_months,
                 "time_served_months": time_served,
                 "remaining_sentence_months": remaining,

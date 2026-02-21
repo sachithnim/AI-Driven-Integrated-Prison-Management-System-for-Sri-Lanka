@@ -106,7 +106,7 @@ class RecommendationService:
         except Exception as e:
             logger.error(f"Error loading models: {e}")
     
-    def generate_recommendations(
+    async def generate_recommendations(
         self, 
         request: RecommendationRequest
     ) -> RecommendationResponse:
@@ -133,14 +133,41 @@ class RecommendationService:
         # Calculate confidence based on feature completeness
         confidence = self._calculate_confidence(request, program_scores)
         
+        # --- NEXT LEVEL UPGRADE: RAG & GenAI ---
+        from services.rag_service import rag_service
+        from core.openai_client import openai_client
+        
+        structured_plan = None
+        
+        if openai_client.enabled:
+            try:
+                # 1. Retrieve RAG Context
+                query = f"rehabilitation for {request.suitabilityGroup} {request.profileFeatures.get('education_level', '')} {request.profileFeatures.get('crime_type', '')}"
+                context = await rag_service.search(query)
+                rag_context_str = rag_service.format_context(context)
+                
+                # 2. Generate Detailed Plan
+                structured_plan_dict = await openai_client.generate_rehabilitation_plan(
+                    inmate_data=request.profileFeatures,
+                    context=rag_context_str
+                )
+                
+                if structured_plan_dict:
+                    from schemas.recommendation import StructuredPlan
+                    structured_plan = StructuredPlan(**structured_plan_dict)
+                    
+            except Exception as e:
+                logger.error(f"Error in Next Level generation: {e}")
+        
         explanation = (
             f"ML-based recommendations for suitability group: {request.suitabilityGroup}, "
-            f"risk score: {request.riskScore:.2f}. Top programs evaluated based on "
-            f"inmate profile and program suitability."
+            f"risk score: {request.riskScore:.2f}. "
+            f"{'AI-generated detailed plan included.' if structured_plan else 'Standard analysis.'}"
         )
         
         return RecommendationResponse(
             programs=programs[:3],  # Top 3 recommendations
+            structured_plan=structured_plan,
             explanation=explanation,
             confidence=confidence
         )

@@ -209,58 +209,91 @@ class EligibilityAssessmentRequest(BaseModel):
     Direct eligibility assessment request - NO inmate_id required
     Accepts full inmate profile data for immediate assessment
     """
-    # Core Profile
-    age: Optional[int] = Field(None, ge=18, le=100)
-    gender: Optional[str] = None
-    crime_type: Optional[str] = None
-    sentence_length_months: Optional[int] = Field(None, ge=0)
-    time_served_months: Optional[int] = Field(None, ge=0)
+    # Personal Information
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    dateOfBirth: Optional[date] = None
+    gender: Optional[str] = Field(None, description="MALE/FEMALE")
+    nationality: Optional[str] = None
+    nic: Optional[str] = None
+    address: Optional[str] = None
+    contactNumber: Optional[str] = None
     
-    # Behavioral Assessment
+    # Physical Characteristics
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    eyeColor: Optional[str] = None
+    hairColor: Optional[str] = None
+    identifyingMarks: Optional[str] = None
+    tattoos: Optional[str] = None
+    
+    # Medical Information
+    medicalConditions: List[str] = Field(default_factory=list)
+    allergies: List[str] = Field(default_factory=list)
+    medications: List[str] = Field(default_factory=list)
+    bloodType: Optional[str] = None
+    
+    # Case Information
+    caseType: Optional[str] = Field(None, description="e.g. FRAUD, THEFT")
+    caseNumber: Optional[str] = None
+    sentenceStartDate: Optional[date] = None
+    sentenceEndDate: Optional[date] = None
+    sentenceDurationMonths: Optional[int] = Field(None, ge=0)
+    paroleEligibilityDate: Optional[date] = None
+    crimeDescription: Optional[str] = None
+    court: Optional[str] = None
+    judge: Optional[str] = None
+    
+    # Facility & Security
+    securityLevel: Optional[str] = None
+    currentFacility: Optional[str] = None
+    admissionDate: Optional[date] = None
+    
+    # Risk Assessment & History
+    riskLevel: Optional[str] = Field(None, description="LOW, MEDIUM, HIGH")
+    riskHistory: List[str] = Field(default_factory=list)
+    gangAffiliation: bool = False
+    violentHistory: bool = False
+    escapeRisk: bool = False
+    suicideRisk: bool = False
+    
+    # Status & Notes
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    
+    # Legacy/Computed Fields (kept for backward compatibility/internal logic)
     behavior_score: float = Field(..., ge=0, le=100, description="Current behavior score (required)")
     discipline_score: float = Field(..., ge=0, le=100, description="Discipline compliance score (required)")
     risk_score: float = Field(..., ge=0, le=1, description="Risk assessment score (required)")
-    
-    # Program Participation
-    programs_completed: int = Field(0, ge=0, description="Number of completed rehabilitation programs")
+    programs_completed: int = Field(0, ge=0)
     programs_enrolled: int = Field(0, ge=0)
     total_attendance_rate: Optional[float] = Field(None, ge=0, le=1)
-    
-    # Disciplinary Record
-    institutional_violations: int = Field(0, ge=0, description="Number of violations")
-    total_incidents: int = Field(0, ge=0, description="Total behavioral incidents")
+    institutional_violations: int = Field(0, ge=0)
+    total_incidents: int = Field(0, ge=0)
     points_deducted: int = Field(0, ge=0)
-    
-    # Additional Factors
     has_substance_abuse: bool = False
     has_mental_health_issues: bool = False
     education_level: Optional[str] = None
     prior_convictions: int = Field(0, ge=0)
     
-    # Optional Identification (for tracking only)
-    inmate_id: Optional[str] = Field(None, description="Optional ID for tracking - NOT required for assessment")
-    
+    # Derived fields helpers (optional mapping)
+    age: Optional[int] = Field(None, ge=18, le=100)
+    time_served_months: Optional[int] = Field(None, ge=0)
+    sentence_length_months: Optional[int] = Field(None, ge=0)
+    crime_type: Optional[str] = None
+    inmate_id: Optional[str] = None
+
     class Config:
         schema_extra = {
             "example": {
+                "firstName": "Nimal",
+                "lastName": "Jayasinghe",
                 "behavior_score": 75.5,
                 "discipline_score": 82.3,
                 "risk_score": 0.42,
-                "programs_completed": 3,
-                "programs_enrolled": 1,
-                "total_attendance_rate": 0.89,
-                "institutional_violations": 2,
-                "total_incidents": 5,
-                "points_deducted": 15,
-                "time_served_months": 24,
-                "sentence_length_months": 60,
-                "has_substance_abuse": True,
-                "has_mental_health_issues": False,
-                "age": 32,
-                "crime_type": "drug_trafficking",
-                "education_level": "secondary",
-                "prior_convictions": 1,
-                "inmate_id": "INM-2024-1234"
+                "caseType": "FRAUD",
+                "riskLevel": "LOW",
+                "medicalConditions": ["High Cholesterol"]
             }
         }
 
