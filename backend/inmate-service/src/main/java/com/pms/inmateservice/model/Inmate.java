@@ -24,9 +24,6 @@ public class Inmate {
     private Long id;
 
     // Basic Information
-    @Column(nullable = false, unique = true, length = 50)
-    private String bookingNumber;
-
     @Column(nullable = false, length = 100)
     private String firstName;
 
@@ -95,6 +92,23 @@ public class Inmate {
 
     @Column(length = 20)
     private String cellNumber;
+
+    @ManyToOne
+    @JoinColumn(name = "cell_id")
+    private Cell cell;
+
+    // AI Generated Scores
+    @Column(name = "behavior_score")
+    private Double behaviorScore;
+
+    @Column(name = "discipline_score")
+    private Double disciplineScore;
+
+    @Column(name = "risk_score")
+    private Double riskScore;
+
+    @Column(length = 2000)
+    private String aiReasoning;
 
     private LocalDate admissionDate;
 
