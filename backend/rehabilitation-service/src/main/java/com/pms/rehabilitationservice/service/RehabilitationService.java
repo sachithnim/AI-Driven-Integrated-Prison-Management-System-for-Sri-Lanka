@@ -36,6 +36,13 @@ public class RehabilitationService {
         return profileRepository.findByInmateId(inmateId)
                 .orElseThrow(() -> new RuntimeException("Profile not found for inmate: " + inmateId));
     }
+
+    /**
+     * Get all rehab profiles
+     */
+    public List<RehabProfile> getAllProfiles() {
+        return profileRepository.findAll();
+    }
     
     /**
      * Generate AI-powered recommendation for an inmate
@@ -190,6 +197,27 @@ public class RehabilitationService {
      */
     public List<Recommendation> getRecommendations(String inmateId) {
         return recommendationRepository.findByInmateId(inmateId);
+    }
+
+    /**
+     * Get medical reports for an inmate
+     */
+    public List<MedicalReport> getMedicalReports(String inmateId) {
+        return medicalReportRepository.findByInmateId(inmateId);
+    }
+
+    /**
+     * Get counseling notes for an inmate
+     */
+    public List<CounselingNote> getCounselingNotes(String inmateId) {
+        return counselingNoteRepository.findByInmateId(inmateId);
+    }
+
+    /**
+     * Get progress logs for an inmate
+     */
+    public List<ProgressLog> getProgressLogs(String inmateId) {
+        return progressLogRepository.findByInmateId(inmateId);
     }
     
     // Helper methods

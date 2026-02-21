@@ -25,6 +25,12 @@ public class RehabilitationController {
     public ResponseEntity<RehabProfile> getProfile(@PathVariable String inmateId) {
         return ResponseEntity.ok(rehabilitationService.getProfile(inmateId));
     }
+
+    @GetMapping("/profiles")
+    @Operation(summary = "Get all rehabilitation profiles")
+    public ResponseEntity<List<RehabProfile>> getAllProfiles() {
+        return ResponseEntity.ok(rehabilitationService.getAllProfiles());
+    }
     
     @PostMapping("/recommend")
     @Operation(summary = "Generate AI-powered rehabilitation recommendation")
@@ -37,6 +43,24 @@ public class RehabilitationController {
     @Operation(summary = "Get all recommendations for an inmate")
     public ResponseEntity<List<Recommendation>> getRecommendations(@PathVariable String inmateId) {
         return ResponseEntity.ok(rehabilitationService.getRecommendations(inmateId));
+    }
+
+    @GetMapping("/medical-reports/{inmateId}")
+    @Operation(summary = "Get all medical reports for an inmate")
+    public ResponseEntity<List<MedicalReport>> getMedicalReports(@PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getMedicalReports(inmateId));
+    }
+
+    @GetMapping("/counseling-notes/{inmateId}")
+    @Operation(summary = "Get all counseling notes for an inmate")
+    public ResponseEntity<List<CounselingNote>> getCounselingNotes(@PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getCounselingNotes(inmateId));
+    }
+
+    @GetMapping("/progress-logs/{inmateId}")
+    @Operation(summary = "Get all progress logs for an inmate")
+    public ResponseEntity<List<ProgressLog>> getProgressLogs(@PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getProgressLogs(inmateId));
     }
     
     @PostMapping("/medical-report")
