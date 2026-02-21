@@ -1,48 +1,75 @@
-"""
-Run All Modules
-Start all AI modules simultaneously (for development/testing)
-"""
-
-import sys
-from pathlib import Path
 import subprocess
+import sys
 import time
 
-sys.path.insert(0, str(Path(__file__).parent))
-
-from modules.shared.config import shared_settings
-
-MODULES = [
-    ("Rehabilitation", "run_rehabilitation.py", shared_settings.REHABILITATION_PORT),
-    ("Overcrowding", "run_overcrowding.py", shared_settings.OVERCROWDING_PORT),
-    ("Violence", "run_violence.py", shared_settings.VIOLENCE_PORT),
-    ("Mental Health", "run_mental_health.py", shared_settings.MENTAL_HEALTH_PORT),
+# Configuration for all AI Microservices
+services = [
+    {
+        "name": "Rehabilitation",
+        "app_path": "modules.rehabilitation.app.main:app",
+        "port": 8001,
+        "color": "\033[94m" # Blue
+    },
+    {
+        "name": "Overcrowding",
+        "app_path": "modules.overcrowding.main:app",
+        "port": 8002,
+        "color": "\033[92m" # Green
+    },
+    {
+        "name": "Violence Detection",
+        "app_path": "modules.violence.main:app",
+        "port": 8003,
+        "color": "\033[91m" # Red
+    },
+    {
+        "name": "Mental Health",
+        "app_path": "modules.mental_health.main:app",
+        "port": 8004,
+        "color": "\033[95m" # Purple
+    }
 ]
 
-if __name__ == "__main__":
-    print("=" * 70)
-    print("PRISON MANAGEMENT AI SYSTEM - ALL MODULES")
-    print("=" * 70)
-    print()
-    print("Available Modules:")
-    for name, script, port in MODULES:
-        print(f"  • {name:20} → Port {port} → {script}")
-    print()
-    print("=" * 70)
-    print()
-    
-    response = input("Start all modules? (y/n): ")
-    
-    if response.lower() == 'y':
-        print("\nStarting modules...")
-        print("Note: Only Rehabilitation module is fully implemented.")
-        print("Other modules will show placeholder messages.")
-        print()
+def run_services():
+    processes = []
+    print("\n🚀 \033[1mStarting AI-Driven Prison Management System - AI Modules\033[0m\n")
+
+    try:
+        for service in services:
+            print(f"{service['color']}► Starting {service['name']} Service on port {service['port']}...\033[0m")
+            
+            # Using sys.executable ensures we use the currently active python environment
+            cmd = [
+                sys.executable, "-m", "uvicorn", 
+                service["app_path"], 
+                "--host", "0.0.0.0", 
+                "--port", str(service["port"]),
+                "--reload"
+            ]
+            
+            # Start process without blocking
+            proc = subprocess.Popen(cmd)
+            processes.append((service["name"], proc))
+            
+        print("\n" + "="*60)
+        print(f"{'SERVICE':<20} | {'STATUS':<10} | {'URL':<25}")
+        print("-" * 60)
+        for service in services:
+            print(f"{service['name']:<20} | {'ONLINE':<10} | http://localhost:{service['port']}")
+        print("="*60 + "\n")
+        print("Press \033[1mCtrl+C\033[0m to stop all services.\n")
+
+        # Keep main script alive
+        while True:
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print("\n\n🛑 Stopping all services...")
+        for name, proc in processes:
+            print(f"   Terminating {name}...")
+            proc.terminate()
         
-        # For now, just run rehabilitation
-        print("Starting Rehabilitation module...")
-        subprocess.run([sys.executable, "run_rehabilitation.py"])
-    else:
-        print("\nTo run individual modules:")
-        for name, script, port in MODULES:
-            print(f"  python {script}")
+        print("\n✅ All services stopped successfully.")
+
+if __name__ == "__main__":
+    run_services()

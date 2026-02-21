@@ -35,7 +35,7 @@ async def generate_recommendations(request: RecommendationRequest) -> Recommenda
     - Overall explanation and confidence level
     """
     try:
-        return recommendation_service.generate_recommendations(request)
+        return await recommendation_service.generate_recommendations(request)
     except Exception as e:
         raise HTTPException(
             status_code=500,

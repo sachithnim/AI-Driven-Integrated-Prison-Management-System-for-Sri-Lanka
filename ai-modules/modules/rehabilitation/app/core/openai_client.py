@@ -81,10 +81,11 @@ class OpenAIClient:
         prediction: bool,
         probability: float,
         risk_factors: List[str],
-        strengths: List[str]
+        strengths: List[str],
+        context: str = ""
     ) -> str:
         """
-        Generate detailed reasoning for eligibility decision using GPT
+        Generate detailed reasoning for eligibility decision using GPT and RAG context
         
         Args:
             inmate_data: Inmate profile dictionary
@@ -92,6 +93,7 @@ class OpenAIClient:
             probability: Prediction probability
             risk_factors: List of identified risk factors
             strengths: List of identified strengths
+            context: Retrieved context from similar cases or guidelines (RAG)
             
         Returns:
             Detailed reasoning text
@@ -100,16 +102,21 @@ class OpenAIClient:
             return self._fallback_reasoning(inmate_data, prediction, probability)
         
         try:
+            # Format inmate profile text
+            profile_text = "\n".join([f"- {k}: {v}" for k, v in inmate_data.items() if v is not None and k not in ['behavior_score', 'discipline_score', 'risk_score']])
+            
             prompt = f"""As a rehabilitation assessment expert, provide a comprehensive analysis of this inmate's eligibility for rehabilitation programs.
+            
+CONTEXT & GUIDELINES (RAG Retrieved):
+{context if context else "No specific guidelines retrieved. Use standard best practices."}
 
 INMATE PROFILE:
-- ID: {inmate_data.get('inmate_id', 'N/A')}
-- Age: {inmate_data.get('age', 'N/A')}
-- Crime: {inmate_data.get('crime_type', 'N/A')}
-- Sentence: {inmate_data.get('sentence_length_months', 0)} months (served {inmate_data.get('time_served_months', 0)} months)
+- Name: {inmate_data.get('firstName', '')} {inmate_data.get('lastName', '')}
+- Case: {inmate_data.get('caseType', 'N/A')} - {inmate_data.get('crimeDescription', 'N/A')}
 - Behavior Score: {inmate_data.get('behavior_score', 0):.1f}/100
 - Discipline Score: {inmate_data.get('discipline_score', 0):.1f}/100
 - Risk Score: {inmate_data.get('risk_score', 0):.2f} (0=low, 1=high)
+- Medical: {', '.join(inmate_data.get('medicalConditions', [])) or 'None'}
 - Programs Completed: {inmate_data.get('programs_completed', 0)}
 - Violations: {inmate_data.get('institutional_violations', 0)}
 
@@ -122,10 +129,10 @@ STRENGTHS:
 AI PREDICTION: {'ELIGIBLE' if prediction else 'NOT ELIGIBLE'} (Confidence: {probability*100:.1f}%)
 
 Provide a 3-4 sentence professional assessment that:
-1. Summarizes the key factors influencing this decision
-2. Explains why the inmate is or isn't ready for rehabilitation
-3. Provides specific recommendations for improvement if not eligible
-4. Considers Sri Lankan prison context and cultural factors
+1. References specific guidelines or similar cases from the Context if relevant.
+2. Explains the decision based on behavior, medical needs, and risk profile.
+3. Provides specific recommendations, especially considering medical conditions or specific case types.
+4. Considers Sri Lankan prison context.
 
 Be objective, compassionate, and evidence-based."""
 
@@ -140,12 +147,71 @@ Be objective, compassionate, and evidence-based."""
             )
             
             reasoning = response.choices[0].message.content.strip()
-            logger.info(f"Generated OpenAI reasoning for inmate {inmate_data.get('inmate_id')}")
+            logger.info(f"Generated OpenAI reasoning for inmate {inmate_data.get('inmate_id', 'Unknown')}")
             return reasoning
             
         except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.error(f"Error generating reasoning: {str(e)}")
             return self._fallback_reasoning(inmate_data, prediction, probability)
+    
+    async def generate_rehabilitation_plan(
+        self,
+        inmate_data: Dict[str, Any],
+        context: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Generate detailed implementation plan (goals, schedule, milestones)
+        Returns a dictionary matching StructuredPlan schema
+        """
+        if not self.enabled:
+            return None
+            
+        try:
+            prompt = f"""Create a detailed, 12-week rehabilitation plan for this inmate, considering Sri Lankan context (NVQ vocational training, cultural programs).
+            
+CONTEXT (RAG):
+{context}
+
+INMATE PROFILE:
+- Name: {inmate_data.get('firstName', '')} {inmate_data.get('lastName', '')}
+- Education: {inmate_data.get('education_level', 'N/A')}
+- Crime: {inmate_data.get('caseType', '')} - {inmate_data.get('crimeDescription', '')}
+- Risk/Behavior: Risk={inmate_data.get('risk_score', 0):.2f}, Behavior={inmate_data.get('behavior_score', 0):.1f}
+- Medical: {inmate_data.get('medicalConditions', [])}
+- Background: {inmate_data.get('background_summary', 'N/A')}
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "short_term_goals": ["goal 1", "goal 2"],
+  "long_term_goals": ["goal 1", "goal 2"],
+  "weekly_schedule": [
+    {{"day": "Monday", "activity": "08:00 NVQ Carpentry, 14:00 Counseling"}},
+    {{"day": "Tuesday", "activity": "..."}}
+  ],
+  "key_milestones": [
+    {{"week": "Week 4", "milestone": "Complete Safety module"}},
+    {{"week": "Week 12", "milestone": "Final Exam"}}
+  ]
+}}
+"""
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a rehabilitation case manager creating detailed, personalized plans. Output ONLY JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                response_format={"type": "json_object"}
+            )
+            
+            import json
+            content = response.choices[0].message.content.strip()
+            return json.loads(content)
+            
+        except Exception as e:
+            logger.error(f"Error generating plan: {str(e)}")
+            return None
     
     def _fallback_reasoning(self, inmate_data: Dict, prediction: bool, probability: float) -> str:
         """Fallback reasoning when OpenAI is unavailable"""
