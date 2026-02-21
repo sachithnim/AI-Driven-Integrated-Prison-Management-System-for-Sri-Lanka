@@ -15,6 +15,9 @@ import {
   FileText,
   Settings,
   BarChart3,
+  Users2,
+  Castle,
+  Grid3x3,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -26,6 +29,16 @@ const sidebarItems = [
         path: "/",
         icon: LayoutDashboard,
       },
+      {
+        name: "Overcrowding",
+        path: "/overcrowding",
+        icon: Users2,
+      },
+      {
+        name: "Rehabilitation",
+        path: "/rehabilitation",
+        icon: Calendar,
+      },
     ]
   },
   {
@@ -35,6 +48,11 @@ const sidebarItems = [
         name: "Inmates",
         path: "/inmates",
         icon: Users,
+      },
+      {
+        name: "Cells",
+        path: "/cells",
+        icon: Grid3x3,
       },
       {
         name: "Staff",
