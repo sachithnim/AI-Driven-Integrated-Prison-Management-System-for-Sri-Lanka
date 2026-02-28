@@ -5,6 +5,7 @@ import com.pms.inmateservice.model.*;
 import com.pms.inmateservice.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,9 @@ public class InmateService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final WebClient.Builder webClientBuilder;
 
+    @Value("${rehabilitation.ai.url:http://rehabilitation-ai:8001}")
+    private String rehabilitationAiUrl;
+
     @Transactional
     public InmateResponseDTO createInmate(InmateRequestDTO requestDTO) {
         log.info("Creating new inmate: {} {}", requestDTO.getFirstName(), requestDTO.getLastName());
@@ -55,7 +59,7 @@ public class InmateService {
 
             Map response = webClientBuilder.build()
                     .post()
-                    .uri("http://localhost:8001/api/v1/scoring/initial-assessment")
+                    .uri(rehabilitationAiUrl + "/api/v1/scoring/initial-assessment")
                     .bodyValue(aiRequest)
                     .retrieve()
                     .bodyToMono(Map.class)

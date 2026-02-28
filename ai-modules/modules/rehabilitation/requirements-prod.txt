@@ -34,7 +34,10 @@ sentence-transformers==2.2.2
 nltk==3.8.1
 
 # Authentication
-PyJWT==2.8.1
+PyJWT==2.8.0
+
+# OpenAI Integration
+openai==1.6.1
 
 # Optional: For production deployment
 # gunicorn==21.2.0  # WSGI server
