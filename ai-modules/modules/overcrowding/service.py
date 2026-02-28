@@ -23,8 +23,11 @@ class HeadCountService:
             self.detector = pipeline("object-detection", model="facebook/detr-resnet-50")
             logger.info("Object detection model loaded successfully.")
         except Exception as e:
+            import traceback
             logger.error(f"Failed to load object detection model: {str(e)}")
+            logger.error(traceback.format_exc())
             self.detector = None
+            self._init_error = str(e)
 
     def detect_count(self, image_bytes: bytes) -> Dict[str, Any]:
         """
@@ -34,7 +37,7 @@ class HeadCountService:
             return {
                 "count": 0,
                 "status": "error",
-                "message": "Model not initialized. Check server logs."
+                "message": f"Model not initialized: {getattr(self, '_init_error', 'Check server logs.')}"
             }
 
         try:
