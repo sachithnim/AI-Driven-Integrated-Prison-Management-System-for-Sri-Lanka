@@ -65,3 +65,52 @@ class ViolenceDetectorService:
         if camera_id in self.active_sessions:
             del self.active_sessions[camera_id]
 
+    def _ensure_listener(self):
+        if not hasattr(self, 'listener_task') or self.listener_task is None:
+            self.listener_task = asyncio.create_task(self._listen_results_async())
+
+    async def _listen_results_async(self):
+        while True:
+            try:
+                r = self._get_redis()
+                if not r:
+                    await asyncio.sleep(2)
+                    continue
+
+                result = await asyncio.to_thread(r.brpop, 'inference_results', 1)
+                if result:
+                    _, data = result
+                    res = pickle.loads(data)
+                    camera_id = res['camera_id']
+                    
+                    self.latest_detections = res.get('yolo_res', [])
+                    session = self.get_session(camera_id)
+                    if camera_id in self.active_sessions:
+                        self.active_sessions[camera_id].is_analyzing = False
+                        
+                    raw_level = res.get('alert_level', 'Low')
+                    
+                    # Temporal Smoothing (Box kernel on alert integer levels)
+                    level_map = {'Low': 0, 'Medium': 1, 'High': 2}
+                    idx_map = {0: 'Low', 1: 'Medium', 2: 'High'}
+                    
+                    if not hasattr(session, 'alert_history'):
+                        session.alert_history = deque(maxlen=5)
+                    session.alert_history.append(level_map[raw_level])
+                    
+                    smoothed_val = int(round(sum(session.alert_history) / len(session.alert_history)))
+                    alert_level = idx_map[smoothed_val]
+                    
+                    if alert_level in ['Medium', 'High']:
+                        await self._create_alert(
+                            camera_id, 
+                            alert_level, 
+                            res.get('weapon_conf', 0.0), 
+                            res.get('fight_conf', 0.0), 
+                            res.get('scream_conf', 0.0), 
+                            res.get('weapon_name')
+                        )
+            except Exception as e:
+                print(f"Redis listener error: {e}")
+                await asyncio.sleep(1)
+
