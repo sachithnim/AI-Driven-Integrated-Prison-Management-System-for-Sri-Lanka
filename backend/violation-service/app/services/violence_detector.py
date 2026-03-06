@@ -293,3 +293,85 @@ class ViolenceDetectorService:
                 container.close()
             self.remove_session(camera_id)
 
+
+
+    async def _create_alert(self, camera_id, level, weapon_score, fight_score, audio_score, weapon_name=None):
+        """
+        Broadcast alert to WebSocket clients.
+        """
+        from app.api.endpoints.stream import manager
+        
+        msg = f"Detected {level} priority incident. "
+        if weapon_name and weapon_score > 0.4:
+             msg += f"Weapon: {weapon_name} ({weapon_score:.2f}). "
+        else:
+             msg += f"Weapon: {weapon_score:.2f}. "
+             
+        msg += f"Fight: {fight_score:.2f}, Audio: {audio_score:.2f}"
+
+        # Insert Alert and Handle Incident Cooldown via PostgreSQL
+        def db_logic():
+            # Get SessionLocal
+            from app.db.base import SessionLocal
+            from app.db.models import Incident, Alert
+            from sqlalchemy import desc
+            from datetime import timezone
+            
+            db = self.db if self.db else SessionLocal()
+            try:
+                last_incident = db.query(Incident).filter(Incident.camera_id == camera_id).order_by(desc(Incident.timestamp)).first()
+                # Check 30 seconds cooldown
+                now = datetime.now(timezone.utc)
+                incident_id = None
+                
+                if last_incident and last_incident.timestamp:
+                    # convert to naive if needed, or both to utc
+                    time_diff = now - last_incident.timestamp
+                    if time_diff.total_seconds() < 30:
+                        incident_id = last_incident.id
+                        last_incident.timestamp = now
+                        if level == 'High':
+                             last_incident.severity = 'High'
+                
+                if not incident_id:
+                    # Check if camera exists, and if not create it
+                    from app.db.models import Camera
+                    cam = db.query(Camera).filter(Camera.id == camera_id).first()
+                    if not cam:
+                        cam = Camera(id=camera_id, location="Unknown", status="active")
+                        db.add(cam)
+                        db.commit()
+                        
+                    new_inc = Incident(camera_id=camera_id, type="Violence", severity=level, description=f"Weapon: {weapon_score}, Fight: {fight_score}")
+                    db.add(new_inc)
+                    db.commit()
+                    db.refresh(new_inc)
+                    incident_id = new_inc.id
+                    
+                new_alert = Alert(incident_id=incident_id, message=msg)
+                db.add(new_alert)
+                db.commit()
+            except Exception as e:
+                print(f"DB Error creating alert: {e}")
+            finally:
+                if not self.db:
+                    db.close()
+                    
+        await asyncio.to_thread(db_logic)
+
+        alert_data = {
+            "level": level,
+            "camera_id": camera_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "message": msg,
+            "weapon_score": float(weapon_score),
+            "weapon_name": weapon_name,
+            "fight_score": float(fight_score),
+            "audio_score": float(audio_score)
+        }
+
+        # print(f"Broadcasting Alert: {alert_data}")
+        await manager.broadcast(json.dumps(alert_data))
+
+# Global Singleton Instance
+detector = ViolenceDetectorService()
