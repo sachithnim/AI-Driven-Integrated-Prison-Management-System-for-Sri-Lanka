@@ -18,6 +18,7 @@ import {
   Users2,
   Castle,
   Grid3x3,
+  ShieldAlert
 } from "lucide-react";
 
 const sidebarItems = [
@@ -63,6 +64,12 @@ const sidebarItems = [
         name: "Security & Monitoring",
         path: "/camera",
         icon: CameraIcon,
+      },
+
+      {
+        name: "Violation Detection",
+        path: "/violations",
+        icon: ShieldAlert,
       },
     ]
   },

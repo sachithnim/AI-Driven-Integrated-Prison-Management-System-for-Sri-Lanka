@@ -8,6 +8,7 @@ import Rehabilitation from "../layouts/rehabilitation/Rehabilitation";
 import Inmates from "../layouts/inmates/Inmates";
 import Cells from "../layouts/cells/Cells";
 import RehabInmates from "../layouts/rehabilitation/RehabInmates";
+import Violations from "../layouts/violations/Violations";
 
 
 export const router = createBrowserRouter([
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
             {
                 path: "/cells",
                 element: <Cells />
+            },
+            {
+                path: "/violations",
+                element: <Violations />
             },
         ]
     },
