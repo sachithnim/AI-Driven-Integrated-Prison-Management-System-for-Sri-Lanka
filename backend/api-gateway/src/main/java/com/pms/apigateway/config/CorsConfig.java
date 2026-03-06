@@ -6,7 +6,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -19,33 +18,30 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        
+
         // Allow requests from these origins
-        corsConfig.setAllowedOrigins(Arrays.asList(
-            "http://localhost:5173",  // Vite default port
-            "http://localhost:3000"   // React default port
-        ));
-        
+        corsConfig.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"));
+
         // Allow all HTTP methods
-        corsConfig.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
-        
+        corsConfig.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
         // Allow all headers
         corsConfig.setAllowedHeaders(List.of("*"));
-        
+
         // Allow credentials (cookies, authorization headers)
         corsConfig.setAllowCredentials(true);
-        
+
         // Cache preflight response for 1 hour
         corsConfig.setMaxAge(3600L);
-        
+
         // Expose these headers to the client
-        corsConfig.setExposedHeaders(Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "X-Total-Count"
-        ));
+        corsConfig.setExposedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Total-Count"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
