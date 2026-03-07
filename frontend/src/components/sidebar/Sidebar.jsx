@@ -18,7 +18,8 @@ import {
   Users2,
   Castle,
   Grid3x3,
-  ShieldAlert
+  ShieldAlert,
+  Home
 } from "lucide-react";
 
 const sidebarItems = [
@@ -39,6 +40,11 @@ const sidebarItems = [
         name: "Rehabilitation",
         path: "/rehabilitation",
         icon: Calendar,
+      },
+      {
+        name: "Home Leave",
+        path: "/home-leave",
+        icon: Home,
       },
     ]
   },

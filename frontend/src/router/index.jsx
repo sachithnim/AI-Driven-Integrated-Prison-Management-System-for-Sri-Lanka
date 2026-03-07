@@ -9,6 +9,11 @@ import Inmates from "../layouts/inmates/Inmates";
 import Cells from "../layouts/cells/Cells";
 import RehabInmates from "../layouts/rehabilitation/RehabInmates";
 import Violations from "../layouts/violations/Violations";
+import RehabProgress from "../layouts/rehabilitation/RehabProgress";
+import RehabPredictions from "../layouts/rehabilitation/RehabPredictions";
+import HomeLeave from "../layouts/rehabilitation/HomeLeave";
+import InmateMapView from "../layouts/rehabilitation/InmateMapView";
+import InmateDetail from "../layouts/inmates/InmateDetail";
 
 
 export const router = createBrowserRouter([
@@ -39,11 +44,41 @@ export const router = createBrowserRouter([
                         path: "rehab-inmates",
                         element: <RehabInmates />
                     },
+                    {
+                        path: "progress",
+                        element: <RehabProgress />
+                    },
+                    {
+                        path: "predictions",
+                        element: <RehabPredictions />
+                    },
+                ]
+            },
+            {
+                path: "/home-leave",
+                children: [
+                    {
+                        index: true,
+                        element: <HomeLeave />
+                    },
+                    {
+                        path: "map",
+                        element: <InmateMapView />
+                    },
                 ]
             },
             {
                 path: "/inmates",
-                element: <Inmates />
+                children: [
+                    {
+                        index: true,
+                        element: <Inmates />
+                    },
+                    {
+                        path: ":id",
+                        element: <InmateDetail />
+                    }
+                ]
             },
             {
                 path: "/cells",
