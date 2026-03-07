@@ -30,39 +30,39 @@ ENCODERS = {}
 
 
 def load_models():
-    """Load all trained models"""
+    """Load all trained models.  Each model is loaded independently so that
+    a version-mismatch on one file (e.g. missing _loss module) does not
+    prevent the other models from loading."""
     models_dir = Path("app/models")
-    
-    try:
-        # Eligibility model
-        if (models_dir / "eligibility_model.joblib").exists():
-            MODELS['eligibility'] = joblib.load(models_dir / "eligibility_model.joblib")
-            SCALERS['eligibility'] = joblib.load(models_dir / "eligibility_scaler.joblib")
-            logger.info("✓ Loaded eligibility model")
-        
-        # Early release model
-        if (models_dir / "early_release_model.joblib").exists():
-            MODELS['early_release'] = joblib.load(models_dir / "early_release_model.joblib")
-            SCALERS['early_release'] = joblib.load(models_dir / "early_release_scaler.joblib")
-            logger.info("✓ Loaded early release model")
-        
-        # Industrial training model
-        if (models_dir / "industrial_training_model.joblib").exists():
-            MODELS['industrial_training'] = joblib.load(models_dir / "industrial_training_model.joblib")
-            SCALERS['industrial_training'] = joblib.load(models_dir / "industrial_training_scaler.joblib")
-            ENCODERS['education'] = joblib.load(models_dir / "education_encoder.joblib")
-            logger.info("✓ Loaded industrial training model")
-        
-        # Home leave model
-        if (models_dir / "home_leave_model.joblib").exists():
-            MODELS['home_leave'] = joblib.load(models_dir / "home_leave_model.joblib")
-            SCALERS['home_leave'] = joblib.load(models_dir / "home_leave_scaler.joblib")
-            logger.info("✓ Loaded home leave model")
-        
-        logger.info(f"Loaded {len(MODELS)} prediction models")
-        
-    except Exception as e:
-        logger.error(f"Error loading models: {e}")
+
+    def _try_load(key, model_file, scaler_file=None, encoder_file=None, encoder_key=None):
+        model_path = models_dir / model_file
+        if not model_path.exists():
+            return
+        try:
+            MODELS[key] = joblib.load(model_path)
+            if scaler_file:
+                sp = models_dir / scaler_file
+                if sp.exists():
+                    SCALERS[key] = joblib.load(sp)
+            if encoder_file and encoder_key:
+                ep = models_dir / encoder_file
+                if ep.exists():
+                    ENCODERS[encoder_key] = joblib.load(ep)
+            logger.info(f"✓ Loaded {key} model")
+        except Exception as exc:
+            logger.warning(
+                f"Could not load {key} model ({model_file}): {exc}. "
+                "Falling back to LLM-only scoring for this model."
+            )
+
+    _try_load("eligibility",         "eligibility_model.joblib",         "eligibility_scaler.joblib")
+    _try_load("early_release",       "early_release_model.joblib",       "early_release_scaler.joblib")
+    _try_load("industrial_training", "industrial_training_model.joblib", "industrial_training_scaler.joblib",
+              "education_encoder.joblib", "education")
+    _try_load("home_leave",          "home_leave_model.joblib",          "home_leave_scaler.joblib")
+
+    logger.info(f"Loaded {len(MODELS)} prediction models")
 
 
 # Load models on startup

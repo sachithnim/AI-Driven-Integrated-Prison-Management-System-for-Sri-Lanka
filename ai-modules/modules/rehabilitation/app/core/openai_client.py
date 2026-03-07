@@ -50,12 +50,21 @@ class OpenAIClient:
             self.enabled = True
             logger.info("OpenAI client initialized successfully")
     
-    async def get_chat_completion(self, messages: List[Dict[str, str]]) -> str:
+    async def get_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        response_format: Optional[Dict] = None
+    ) -> str:
         """
-        Get a chat completion from OpenAI
+        Get a chat completion from OpenAI.
         
         Args:
-            messages: List of message dictionaries
+            messages: List of message dicts
+            temperature: Override default temperature (lower = more deterministic)
+            max_tokens: Override default max tokens
+            response_format: Optional format override e.g. {"type": "json_object"}
             
         Returns:
             Response content string
@@ -64,12 +73,16 @@ class OpenAIClient:
             return ""
             
         try:
-            response = await self.client.chat.completions.create(
+            kwargs = dict(
                 model=self.model,
                 messages=messages,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+                temperature=temperature if temperature is not None else self.temperature,
+                max_tokens=max_tokens if max_tokens is not None else self.max_tokens,
             )
+            if response_format:
+                kwargs["response_format"] = response_format
+                
+            response = await self.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content.strip()
         except Exception as e:
             logger.error(f"OpenAI chat completion error: {e}")

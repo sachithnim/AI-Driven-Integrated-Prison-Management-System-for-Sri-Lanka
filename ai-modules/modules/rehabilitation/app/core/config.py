@@ -62,9 +62,9 @@ class Settings(BaseSettings):
     
     # OpenAI Integration (v2.0)
     OPENAI_API_KEY: Optional[str] = None
-    OPENAI_MODEL: str = "gpt-4-turbo-preview"
-    OPENAI_MAX_TOKENS: int = 300
-    OPENAI_TEMPERATURE: float = 0.7
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_MAX_TOKENS: int = 800
+    OPENAI_TEMPERATURE: float = 0.2
     
     # Auth Service Integration
     AUTH_SERVICE_URL: str = "http://localhost:4005"
