@@ -17,6 +17,8 @@ export default function CameraManagement() {
   // Form State
   const [isAdding, setIsAdding] = useState(false);
   const [newLocation, setNewLocation] = useState("");
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [availableDevices, setAvailableDevices] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -39,14 +41,24 @@ export default function CameraManagement() {
 
   const handleCreateCamera = async (e) => {
     e.preventDefault();
-    if (!newLocation.trim()) return;
+    if (!newLocation.trim() || !selectedDeviceId) {
+      alert(
+        "Please provide both a location name and select a hardware camera.",
+      );
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const resp = await fetch("http://localhost:8003/api/v1/cameras/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: newLocation }),
+        // Notice we are assuming the backend schema still accepts just 'location'.
+        // To truly bind it to hardware, the backend should eventually save the `deviceId` too.
+        // For now, we combine them into the location label for demonstration, or just save the location.
+        body: JSON.stringify({
+          location: `${newLocation} (${selectedDeviceId.substring(0, 8)}...)`,
+        }),
       });
       if (resp.ok) {
         const newCamera = await resp.json();
@@ -56,6 +68,7 @@ export default function CameraManagement() {
           ),
         );
         setNewLocation("");
+        setSelectedDeviceId("");
         setIsAdding(false);
       } else {
         alert(
@@ -67,6 +80,28 @@ export default function CameraManagement() {
       alert("Error networking with backend.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const openAddForm = async () => {
+    setIsAdding(true);
+    try {
+      // Must request permissions first in an interactive flow before enumerateDevices will show labels
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(
+        (device) => device.kind === "videoinput",
+      );
+      setAvailableDevices(videoDevices);
+      if (videoDevices.length > 0) {
+        setSelectedDeviceId(videoDevices[0].deviceId);
+      }
+    } catch (error) {
+      console.error("Camera access denied or failed:", error);
+      alert(
+        "We need camera permission to list your available hardware devices.",
+      );
+      setIsAdding(false);
     }
   };
 
@@ -93,10 +128,10 @@ export default function CameraManagement() {
 
           <div className="mt-4 md:mt-0">
             <button
-              onClick={() => setIsAdding(!isAdding)}
+              onClick={isAdding ? () => setIsAdding(false) : openAddForm}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-sm flex items-center gap-2 transition-colors"
             >
-              <Plus size={18} /> Add New Location
+              <Plus size={18} /> {isAdding ? "Cancel" : "Add New Location"}
             </button>
           </div>
         </div>
@@ -111,18 +146,44 @@ export default function CameraManagement() {
               onSubmit={handleCreateCamera}
               className="flex flex-col md:flex-row gap-4 items-end"
             >
-              <div className="flex-1 w-full">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Location Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Cell Block A, North Yard..."
-                  value={newLocation}
-                  onChange={(e) => setNewLocation(e.target.value)}
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
-                />
+              <div className="flex-1 w-full space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Location Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Cell Block A, North Yard..."
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Hardware Camera Source
+                  </label>
+                  <select
+                    value={selectedDeviceId}
+                    onChange={(e) => setSelectedDeviceId(e.target.value)}
+                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select an available camera...
+                    </option>
+                    {availableDevices.map((device, i) => (
+                      <option
+                        key={device.deviceId || i}
+                        value={device.deviceId}
+                      >
+                        {device.label || `Camera ${i + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex gap-3 w-full md:w-auto">
