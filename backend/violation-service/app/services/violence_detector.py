@@ -18,12 +18,17 @@ class LiveSession:
     """
     def __init__(self, camera_id):
         self.camera_id = camera_id
-        self.frame_buffer = deque(maxlen=16)
+        self.frame_buffer = deque(maxlen=45) # ~3s buffer at 15fps
         self.audio_buffer = deque(maxlen=80000)
         self.last_processed = time.time()
         self.process_interval = 0.2 # 5 FPS analysis
         self.latest_detections = []
         self.is_analyzing = False
+        
+        # Video recording state
+        self.video_writer = None
+        self.recording_frames_left = 0
+        self.recording_incident_id = None
 
 class ViolenceDetectorService:
     def __init__(self, db: Session = None):
@@ -114,6 +119,31 @@ class ViolenceDetectorService:
                 print(f"Redis listener error: {e}")
                 await asyncio.sleep(1)
 
+    def _handle_recording(self, session, img):
+        if hasattr(session, 'video_writer') and session.video_writer is not None:
+            session.video_writer.write(img)
+            session.recording_frames_left -= 1
+            if session.recording_frames_left <= 0:
+                session.video_writer.release()
+                session.video_writer = None
+                inc_id = session.recording_incident_id
+                session.recording_incident_id = None
+                
+                async def update_db_video_path(i_id):
+                    from app.db.base import SessionLocal
+                    from app.db.models import Incident
+                    db_local = SessionLocal()
+                    try:
+                        inc = db_local.query(Incident).filter(Incident.id == i_id).first()
+                        if inc:
+                            inc.video_path = f"/static/incidents/incident_{i_id}.webm"
+                            db_local.commit()
+                    except Exception as e:
+                        print(f"Error updating video path: {e}")
+                    finally:
+                        db_local.close()
+                asyncio.create_task(update_db_video_path(inc_id))
+
     async def process_live_frame(self, camera_id: int, frame_bytes: bytes):
         """
         Process a single video frame from a live source (WebSocket).
@@ -130,6 +160,9 @@ class ViolenceDetectorService:
 
         # Update Buffer
         session.frame_buffer.append(img)
+        
+        # Handle Video Recording
+        self._handle_recording(session, img)
 
         # Update Global Latest Frame (for debug view)
         self.latest_frame = frame_bytes
@@ -228,6 +261,9 @@ class ViolenceDetectorService:
                         img = frame.to_ndarray(format='bgr24')
                         session.frame_buffer.append(img)
                         
+                        # Handle Video Recording
+                        self._handle_recording(session, img)
+                        
                         current_time = time.time()
                         
                         # Run Analysis via Redis Queue
@@ -323,6 +359,7 @@ class ViolenceDetectorService:
                 # Check 30 seconds cooldown
                 now = datetime.now(timezone.utc)
                 incident_id = None
+                is_new_incident = False
                 
                 if last_incident and last_incident.timestamp:
                     # convert to naive if needed, or both to utc
@@ -334,6 +371,7 @@ class ViolenceDetectorService:
                              last_incident.severity = 'High'
                 
                 if not incident_id:
+                    is_new_incident = True
                     # Check if camera exists, and if not create it
                     from app.db.models import Camera
                     cam = db.query(Camera).filter(Camera.id == camera_id).first()
@@ -351,15 +389,43 @@ class ViolenceDetectorService:
                 new_alert = Alert(incident_id=incident_id, message=msg)
                 db.add(new_alert)
                 db.commit()
+                return incident_id, is_new_incident
             except Exception as e:
                 print(f"DB Error creating alert: {e}")
+                return None, False
             finally:
                 if not self.db:
                     db.close()
                     
-        await asyncio.to_thread(db_logic)
+        db_res = await asyncio.to_thread(db_logic)
+        incident_id = None
+        
+        if db_res:
+            incident_id, is_new_incident = db_res
+            if is_new_incident:
+                session = self.get_session(camera_id)
+                if getattr(session, 'video_writer', None) is None:
+                    try:
+                        os.makedirs("app/static/incidents", exist_ok=True)
+                        if len(session.frame_buffer) > 0:
+                            h, w = session.frame_buffer[-1].shape[:2]
+                        else:
+                            h, w = 480, 640
+                        
+                        fourcc = cv2.VideoWriter_fourcc(*'VP80')
+                        video_path = f"app/static/incidents/incident_{incident_id}.webm"
+                        session.video_writer = cv2.VideoWriter(video_path, fourcc, 15.0, (w, h))
+                        session.recording_incident_id = incident_id
+                        
+                        for frame in list(session.frame_buffer):
+                            session.video_writer.write(frame)
+                            
+                        session.recording_frames_left = 150
+                    except Exception as e:
+                        print(f"Error initializing video writer: {e}")
 
         alert_data = {
+            "incident_id": incident_id,
             "level": level,
             "camera_id": camera_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),

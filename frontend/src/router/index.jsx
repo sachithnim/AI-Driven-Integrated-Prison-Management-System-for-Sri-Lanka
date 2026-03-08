@@ -14,84 +14,88 @@ import RehabPredictions from "../layouts/rehabilitation/RehabPredictions";
 import HomeLeave from "../layouts/rehabilitation/HomeLeave";
 import InmateMapView from "../layouts/rehabilitation/InmateMapView";
 import InmateDetail from "../layouts/inmates/InmateDetail";
-
+import Incidents from "../layouts/violations/Incidents";
 
 export const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <HomeLayout />,
+  {
+    path: "/",
+    element: <HomeLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "/camera",
+        element: <Camera />,
+      },
+      {
+        path: "/overcrowding",
+        element: <Overcrowding />,
+      },
+      {
+        path: "/rehabilitation",
         children: [
-            {
-                index: true,
-                element: <Dashboard />
-            },
-            {
-                path: "/camera",
-                element: <Camera />
-            },
-            {
-                path: "/overcrowding",
-                element: <Overcrowding />
-            },
-            {
-                path: "/rehabilitation",
-                children: [
-                    {
-                        index: true,
-                        element: <Rehabilitation />,
-                    },
-                    {
-                        path: "rehab-inmates",
-                        element: <RehabInmates />
-                    },
-                    {
-                        path: "progress",
-                        element: <RehabProgress />
-                    },
-                    {
-                        path: "predictions",
-                        element: <RehabPredictions />
-                    },
-                ]
-            },
-            {
-                path: "/home-leave",
-                children: [
-                    {
-                        index: true,
-                        element: <HomeLeave />
-                    },
-                    {
-                        path: "map",
-                        element: <InmateMapView />
-                    },
-                ]
-            },
-            {
-                path: "/inmates",
-                children: [
-                    {
-                        index: true,
-                        element: <Inmates />
-                    },
-                    {
-                        path: ":id",
-                        element: <InmateDetail />
-                    }
-                ]
-            },
-            {
-                path: "/cells",
-                element: <Cells />
-            },
-            {
-                path: "/violations",
-                element: <Violations />
-            },
-        ]
-    },
-    {
-        path: "/sign-in",
-        element: <SignIn />
-    },
-])
+          {
+            index: true,
+            element: <Rehabilitation />,
+          },
+          {
+            path: "rehab-inmates",
+            element: <RehabInmates />,
+          },
+          {
+            path: "progress",
+            element: <RehabProgress />,
+          },
+          {
+            path: "predictions",
+            element: <RehabPredictions />,
+          },
+        ],
+      },
+      {
+        path: "/home-leave",
+        children: [
+          {
+            index: true,
+            element: <HomeLeave />,
+          },
+          {
+            path: "map",
+            element: <InmateMapView />,
+          },
+        ],
+      },
+      {
+        path: "/inmates",
+        children: [
+          {
+            index: true,
+            element: <Inmates />,
+          },
+          {
+            path: ":id",
+            element: <InmateDetail />,
+          },
+        ],
+      },
+      {
+        path: "/cells",
+        element: <Cells />,
+      },
+      {
+        path: "/violations",
+        element: <Violations />,
+      },
+      {
+        path: "/incidents",
+        element: <Incidents />,
+      },
+    ],
+  },
+  {
+    path: "/sign-in",
+    element: <SignIn />,
+  },
+]);

@@ -1,11 +1,13 @@
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from app.api.api_v1.api import api_router
 from app.core import config
 from app.services.violence_detector import ViolenceDetectorService, detector
 import asyncio
 import time
+import os
 
 # Create tables on startup (Better to use Alembic in prod)
 from app.db.base import Base, engine
@@ -15,6 +17,10 @@ app = FastAPI(
     title="Prison Violation Detection System",
     openapi_url="/api/v1/openapi.json"
 )
+
+# Create static directory if it doesn't exist
+os.makedirs("app/static/incidents", exist_ok=True)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # CORS
 origins = [

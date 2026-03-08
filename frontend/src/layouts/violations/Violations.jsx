@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Mic, StopCircle, ShieldAlert } from 'lucide-react';
 import AlertFeed from '../../components/AlertFeed';
+import IncidentTable from './IncidentTable';
+
 export default function Violations() {
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -201,6 +203,9 @@ export default function Violations() {
             <AlertFeed />
           </div>
         </div>
+
+        {/* Video Incident History Table */}
+        <IncidentTable />
       </div>
     </div>
   );

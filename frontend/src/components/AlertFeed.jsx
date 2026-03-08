@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
-import { AlertTriangle, ShieldCheck, Play } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Play, Video } from 'lucide-react';
 export default function AlertFeed() {
   const [alerts, setAlerts] = useState([]);
   const socketUrl = 'ws://localhost:8003/api/v1/ws/alerts';
@@ -35,6 +35,7 @@ function ActivityIcon() {
 function AlertCard({ alert }) {
   const isHigh = alert.level === 'High';
   const isMed = alert.level === 'Medium';
+  const [showVideo, setShowVideo] = useState(false);
   
   return (
     <div className={`p-3 rounded-md border-l-4 ${isHigh ? 'border-red-500 bg-red-900/20' : isMed ? 'border-yellow-500 bg-yellow-900/20' : 'border-blue-500 bg-blue-900/20'}`}>
@@ -57,6 +58,29 @@ function AlertCard({ alert }) {
                  <span className="text-red-400 font-bold border border-red-900 px-2 py-0.5 rounded bg-red-900/20">Detected: {alert.weapon_name}</span>
              )}
           </div>
+          {alert.incident_id && (
+             <div className="mt-2 border-t border-slate-700/50 pt-2">
+                 <button 
+                    onClick={() => setShowVideo(!showVideo)}
+                    className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-slate-200 transition-colors text-xs"
+                 >
+                     <Video size={14} /> {showVideo ? 'Hide Clip' : 'View Clip'}
+                 </button>
+                 {showVideo && (
+                     <div className="mt-2 rounded overflow-hidden border border-slate-700 bg-black relative">
+                         <video 
+                             controls 
+                             autoPlay 
+                             className="w-full"
+                             src={`http://localhost:8003/static/incidents/incident_${alert.incident_id}.webm`}
+                         >
+                            Your browser does not support the video tag.
+                         </video>
+                         <div className="text-[10px] text-slate-500 text-center py-1 bg-slate-800">Clip is ready ~10s after alert.</div>
+                     </div>
+                 )}
+             </div>
+          )}
       </div>
     </div>
   );
