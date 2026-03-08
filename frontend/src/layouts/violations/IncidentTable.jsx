@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Video, ChevronDown, ChevronUp, Clock, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Video,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 
 export default function IncidentTable() {
   const [incidents, setIncidents] = useState([]);
@@ -12,11 +18,15 @@ export default function IncidentTable() {
 
   const fetchIncidents = async () => {
     try {
-      const response = await fetch('http://localhost:8003/api/v1/incidents/?limit=20');
+      const response = await fetch(
+        "http://localhost:8003/api/v1/incidents/?limit=20",
+      );
       if (response.ok) {
         const data = await response.json();
         // Sort descending by timestamp assuming backend doesn't
-        const sorted = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const sorted = data.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+        );
         setIncidents(sorted);
       } else {
         console.error("Failed to fetch incidents");
@@ -29,10 +39,13 @@ export default function IncidentTable() {
   };
 
   const getSeverityColor = (severity) => {
-    switch(severity) {
-      case 'High': return 'text-red-500 bg-red-100 border-red-200';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
-      default: return 'text-blue-500 bg-blue-100 border-blue-200';
+    switch (severity) {
+      case "High":
+        return "text-red-500 bg-red-100 border-red-200";
+      case "Medium":
+        return "text-yellow-600 bg-yellow-100 border-yellow-200";
+      default:
+        return "text-blue-500 bg-blue-100 border-blue-200";
     }
   };
 
@@ -42,7 +55,7 @@ export default function IncidentTable() {
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <AlertTriangle className="text-red-500" /> Recent Incidents Logging
         </h2>
-        <button 
+        <button
           onClick={fetchIncidents}
           className="text-sm bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-1.5 px-3 rounded shadow-sm transition-colors"
         >
@@ -78,38 +91,57 @@ export default function IncidentTable() {
             ) : (
               incidents.map((incident) => (
                 <React.Fragment key={incident.id}>
-                  <tr className={`hover:bg-slate-50 transition-colors ${expandedId === incident.id ? 'bg-slate-50' : ''}`}>
+                  <tr
+                    className={`hover:bg-slate-50 transition-colors ${expandedId === incident.id ? "bg-slate-50" : ""}`}
+                  >
                     <td className="p-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-slate-600">
-                        <Clock size={14} /> 
+                        <Clock size={14} />
                         {new Date(incident.timestamp).toLocaleString()}
                       </div>
                     </td>
-                    <td className="p-4 font-medium">CAM-{incident.camera_id}</td>
+                    <td className="p-4 font-medium">
+                      CAM-{incident.camera_id}
+                    </td>
                     <td className="p-4">{incident.type}</td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getSeverityColor(incident.severity)}`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getSeverityColor(incident.severity)}`}
+                      >
                         {incident.severity}
                       </span>
                     </td>
-                    <td className="p-4 max-w-xs truncate" title={incident.description}>
+                    <td
+                      className="p-4 max-w-xs truncate"
+                      title={incident.description}
+                    >
                       {incident.description}
                     </td>
                     <td className="p-4 text-right">
                       {incident.video_path ? (
-                        <button 
-                          onClick={() => setExpandedId(expandedId === incident.id ? null : incident.id)}
+                        <button
+                          onClick={() =>
+                            setExpandedId(
+                              expandedId === incident.id ? null : incident.id,
+                            )
+                          }
                           className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
                         >
                           <Video size={14} /> View Clip
-                          {expandedId === incident.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          {expandedId === incident.id ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )}
                         </button>
                       ) : (
-                        <span className="text-slate-400 text-xs italic">No Video</span>
+                        <span className="text-slate-400 text-xs italic">
+                          No Video
+                        </span>
                       )}
                     </td>
                   </tr>
-                  
+
                   {/* Expanded Video Row */}
                   {expandedId === incident.id && incident.video_path && (
                     <tr className="bg-slate-900 border-t-0 p-0">
@@ -120,9 +152,9 @@ export default function IncidentTable() {
                               <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                               INCIDENT RECORDING
                             </div>
-                            <video 
-                              controls 
-                              autoPlay 
+                            <video
+                              controls
+                              autoPlay
                               className="w-full aspect-video object-contain"
                               src={`http://localhost:8003${incident.video_path}`}
                             >
