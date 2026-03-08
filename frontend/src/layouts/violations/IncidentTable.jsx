@@ -9,12 +9,30 @@ import {
 
 export default function IncidentTable() {
   const [incidents, setIncidents] = useState([]);
+  const [cameras, setCameras] = useState({});
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
+    fetchCameras();
     fetchIncidents();
   }, []);
+
+  const fetchCameras = async () => {
+    try {
+      const response = await fetch("http://localhost:8003/api/v1/cameras/");
+      if (response.ok) {
+        const data = await response.json();
+        const cameraMap = {};
+        data.forEach((cam) => {
+          cameraMap[cam.id] = cam.location;
+        });
+        setCameras(cameraMap);
+      }
+    } catch (error) {
+      console.error("Error fetching cameras:", error);
+    }
+  };
 
   const fetchIncidents = async () => {
     try {
@@ -68,7 +86,7 @@ export default function IncidentTable() {
           <thead>
             <tr className="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider border-b border-slate-200">
               <th className="p-4 font-semibold">Time</th>
-              <th className="p-4 font-semibold">Camera ID</th>
+              <th className="p-4 font-semibold">Location</th>
               <th className="p-4 font-semibold">Type</th>
               <th className="p-4 font-semibold">Severity</th>
               <th className="p-4 font-semibold">Details</th>
@@ -101,7 +119,8 @@ export default function IncidentTable() {
                       </div>
                     </td>
                     <td className="p-4 font-medium">
-                      CAM-{incident.camera_id}
+                      {cameras[incident.camera_id] ||
+                        `CAM-${incident.camera_id}`}
                     </td>
                     <td className="p-4">{incident.type}</td>
                     <td className="p-4">

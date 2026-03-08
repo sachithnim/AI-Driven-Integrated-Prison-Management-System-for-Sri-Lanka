@@ -19,7 +19,7 @@ import {
   Castle,
   Grid3x3,
   ShieldAlert,
-  Home
+  Home,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -46,7 +46,7 @@ const sidebarItems = [
         path: "/home-leave",
         icon: Home,
       },
-    ]
+    ],
   },
   {
     section: "MANAGEMENT",
@@ -67,9 +67,14 @@ const sidebarItems = [
         icon: UserPlus,
       },
       {
-        name: "Security & Monitoring",
-        path: "/camera",
+        name: "Camera Management",
+        path: "/camera/management",
         icon: CameraIcon,
+      },
+      {
+        name: "CCTV Dashboard",
+        path: "/camera/cctv",
+        icon: Grid3x3,
       },
 
       {
@@ -77,7 +82,7 @@ const sidebarItems = [
         path: "/violations",
         icon: ShieldAlert,
       },
-    ]
+    ],
   },
   {
     section: "OPERATIONS",
@@ -97,7 +102,7 @@ const sidebarItems = [
         path: "/analytics",
         icon: BarChart3,
       },
-    ]
+    ],
   },
 ];
 
@@ -186,7 +191,9 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
                                 : "text-gray-400 group-hover:text-slate-700"
                             }`}
                           />
-                          <span className="font-medium text-sm">{item.name}</span>
+                          <span className="font-medium text-sm">
+                            {item.name}
+                          </span>
                           {isActive && (
                             <div className="ml-auto w-1 h-6 bg-white rounded-full"></div>
                           )}
@@ -205,7 +212,9 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
           <div className="flex items-center justify-between mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-yellow-600" />
-              <span className="text-xs font-semibold text-yellow-700">Security Level</span>
+              <span className="text-xs font-semibold text-yellow-700">
+                Security Level
+              </span>
             </div>
             <span className="text-xs font-bold text-yellow-600">HIGH</span>
           </div>

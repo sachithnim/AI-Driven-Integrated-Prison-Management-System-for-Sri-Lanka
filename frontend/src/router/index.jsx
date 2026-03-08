@@ -2,7 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../layouts/homeLayout/HomeLayout";
 import Dashboard from "../layouts/dashboard/Dashboard";
 import SignIn from "../layouts/signin/SignIn";
-import Camera from "../layouts/camera/Camera";
+import CameraManagement from "../layouts/camera/CameraManagement";
+import CCTVGrid from "../layouts/camera/CCTVGrid";
 import Overcrowding from "../layouts/overcrowding/Overcrowding";
 import Rehabilitation from "../layouts/rehabilitation/Rehabilitation";
 import Inmates from "../layouts/inmates/Inmates";
@@ -27,7 +28,16 @@ export const router = createBrowserRouter([
       },
       {
         path: "/camera",
-        element: <Camera />,
+        children: [
+          {
+            path: "management",
+            element: <CameraManagement />,
+          },
+          {
+            path: "cctv",
+            element: <CCTVGrid />,
+          },
+        ],
       },
       {
         path: "/overcrowding",
