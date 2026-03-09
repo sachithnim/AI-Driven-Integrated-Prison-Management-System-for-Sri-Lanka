@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import logo from "../../assets/logo.jpeg";
 import {
   LayoutDashboard,
@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   ChevronLeft,
+  ChevronDown,
   UserPlus,
   CameraIcon,
   Shield,
@@ -23,7 +24,6 @@ import {
   Home,
   FolderOpen,
   History,
-  ChevronDown,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -51,13 +51,40 @@ const sidebarItems = [
         icon: Home,
       },
       {
+        name: "Violation Detection",
+        path: "/violations",
+        icon: ShieldAlert,
+        // <-- Nested items added here
+        subItems: [
+          {
+            name: "Camera Management",
+            path: "/camera/management",
+            icon: CameraIcon,
+          },
+          {
+            name: "CCTV Dashboard",
+            path: "/camera/cctv",
+            icon: Grid3x3,
+          },
+          {
+            name: "Incidents",
+            path: "/incidents",
+            icon: AlertCircle,
+          },
+        ],
+      },
+      {
         name: "Wellness Monitoring",
         icon: CameraIcon,
         subItems: [
           { name: "Survey", path: "/survey", icon: CameraIcon },
           { name: "Inmates History", path: "/survey/history", icon: History },
-          { name: "Common Docs", path: "/survey/common-docs", icon: FolderOpen },
-        ]
+          {
+            name: "Common Docs",
+            path: "/survey/common-docs",
+            icon: FolderOpen,
+          },
+        ],
       },
     ],
   },
@@ -79,32 +106,11 @@ const sidebarItems = [
         path: "/staff",
         icon: UserPlus,
       },
-      {
-        name: "Camera Management",
-        path: "/camera/management",
-        icon: CameraIcon,
-      },
-      {
-        name: "CCTV Dashboard",
-        path: "/camera/cctv",
-        icon: Grid3x3,
-      },
-
-      {
-        name: "Violation Detection",
-        path: "/violations",
-        icon: ShieldAlert,
-      },
     ],
   },
   {
     section: "OPERATIONS",
     items: [
-      {
-        name: "Incidents",
-        path: "/incidents",
-        icon: AlertCircle,
-      },
       {
         name: "Reports",
         path: "/reports",
@@ -120,7 +126,18 @@ const sidebarItems = [
 ];
 
 export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
-  const [expandedMenus, setExpandedMenus] = useState({});
+  // <-- State to track which dropdowns are open
+  const [expandedMenus, setExpandedMenus] = useState({
+    "Violation Detection": false, // False by default. Set to true if you want it open by default.
+  });
+
+  const toggleMenu = (name, e) => {
+    e.preventDefault(); // Prevents the NavLink from navigating if they just click to expand
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }));
+  };
 
   const toggleSubmenu = (name) => {
     setExpandedMenus((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -187,81 +204,86 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
+                  const hasSubItems = !!item.subItems;
                   const isExpanded = expandedMenus[item.name];
 
                   return (
-                    <div key={item.name}>
-                      {hasSubItems ? (
-                        <button
-                          onClick={() => toggleSubmenu(item.name)}
-                          className={`
-                            w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 group
-                            ${isExpanded ? "bg-slate-100 text-slate-800 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-slate-700"}
-                          `}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className={`w-5 h-5 transition-transform duration-200 flex-shrink-0 ${isExpanded ? "text-slate-800" : "text-gray-400 group-hover:text-slate-700"}`} />
-                            <span className="font-medium text-sm">{item.name}</span>
-                          </div>
-                          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                        </button>
-                      ) : (
-                        <NavLink
-                          to={item.path}
-                          onClick={isMobile ? onClose : undefined}
-                          className={({ isActive }) => `
-                          flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
-                          ${
-                            isActive
-                              ? "bg-slate-700 text-white shadow-md"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-slate-700"
-                          }
-                        `}
-                        >
-                          {({ isActive }) => (
-                            <>
-                              <Icon
-                                className={`w-5 h-5 transition-transform duration-200 flex-shrink-0 ${
-                                  isActive
-                                    ? "text-white"
-                                    : "text-gray-400 group-hover:text-slate-700"
+                    <div key={item.path} className="flex flex-col">
+                      <NavLink
+                        to={item.path}
+                        onClick={(e) => {
+                          if (hasSubItems) toggleMenu(item.name, e);
+                          else if (isMobile) onClose();
+                        }}
+                        className={({ isActive }) => `
+                         flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
+                         ${
+                           isActive && !hasSubItems
+                             ? "bg-slate-700 text-white shadow-md"
+                             : "text-gray-600 hover:bg-gray-100 hover:text-slate-700"
+                         }
+                       `}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <Icon
+                              className={`w-5 h-5 transition-transform duration-200 flex-shrink-0 ${
+                                isActive && !hasSubItems
+                                  ? "text-white"
+                                  : "text-gray-400 group-hover:text-slate-700"
+                              }`}
+                            />
+                            <span className="font-medium text-sm flex-1">
+                              {item.name}
+                            </span>
+
+                            {/* Dropdown Arrow for parent items */}
+                            {hasSubItems && (
+                              <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 text-gray-400 group-hover:text-slate-700 ${
+                                  isExpanded ? "rotate-180" : ""
                                 }`}
                               />
-                              <span className="font-medium text-sm">{item.name}</span>
-                              {isActive && (
-                                <div className="ml-auto w-1 h-6 bg-white rounded-full"></div>
-                              )}
-                            </>
-                          )}
-                        </NavLink>
-                      )}
+                            )}
 
-                      {/* Sub-items rendering */}
+                            {isActive && !hasSubItems && (
+                              <div className="ml-auto w-1 h-6 bg-white rounded-full"></div>
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+
+                      {/* Sub-menu rendering */}
                       {hasSubItems && isExpanded && (
-                        <div className="mt-1 ml-4 pl-4 border-l-2 border-slate-200 space-y-1">
+                        <div className="ml-4 pl-4 mt-1 space-y-1 border-l-2 border-gray-100">
                           {item.subItems.map((subItem) => {
                             const SubIcon = subItem.icon;
                             return (
                               <NavLink
                                 key={subItem.path}
                                 to={subItem.path}
-                                end
                                 onClick={isMobile ? onClose : undefined}
                                 className={({ isActive }) => `
-                                  flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group
-                                  ${
-                                    isActive
-                                      ? "bg-indigo-50 text-indigo-700 font-semibold shadow-sm"
-                                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                                  }
-                                `}
+                                 flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group
+                                 ${
+                                   isActive
+                                     ? "bg-slate-100 text-slate-800 font-semibold"
+                                     : "text-gray-500 hover:bg-gray-50 hover:text-slate-700"
+                                 }
+                               `}
                               >
                                 {({ isActive }) => (
                                   <>
-                                    <SubIcon className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"}`} />
-                                    <span className="text-sm">{subItem.name}</span>
-                                    {isActive && <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>}
+                                    <SubIcon
+                                      className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${
+                                        isActive
+                                          ? "text-slate-700"
+                                          : "text-gray-400 group-hover:text-slate-600"
+                                      }`}
+                                    />
+                                    <span className="text-sm">
+                                      {subItem.name}
+                                    </span>
                                   </>
                                 )}
                               </NavLink>
@@ -282,7 +304,9 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
           <div className="flex items-center justify-between mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-yellow-600" />
-              <span className="text-xs font-semibold text-yellow-700">Security Level</span>
+              <span className="text-xs font-semibold text-yellow-700">
+                Security Level
+              </span>
             </div>
             <span className="text-xs font-bold text-yellow-600">HIGH</span>
           </div>
@@ -297,4 +321,3 @@ export default function Sidebar({ isOpen, onClose, isMobile, currentUser }) {
     </>
   );
 }
-

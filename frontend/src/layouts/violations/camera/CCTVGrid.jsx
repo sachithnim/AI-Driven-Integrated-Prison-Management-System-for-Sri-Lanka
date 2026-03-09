@@ -9,9 +9,9 @@ import {
   ToggleRight,
   ToggleLeft,
 } from "lucide-react";
-import { useCamera } from "../../context/CameraContext";
+import { useCamera } from "../../../context/CameraContext";
 import { useNavigate } from "react-router-dom";
-import AlertFeed from "../violations/../../components/AlertFeed"; // reusing the component
+import AlertFeed from "../../../components/AlertFeed"; // reusing the component
 
 export default function CCTVGrid() {
   const [cameras, setCameras] = useState([]);
@@ -237,18 +237,18 @@ export default function CCTVGrid() {
   };
 
   return (
-    <div className="h-full bg-slate-950 min-h-screen text-slate-100 p-4 md:p-6 lg:p-4 flex flex-col">
+    <div className="h-full bg-slate-50 min-h-screen text-slate-900 p-4 md:p-6 lg:p-4 flex flex-col">
       {/* Hidden processing canvas */}
       <canvas ref={canvasRef} width="640" height="480" className="hidden" />
 
       {/* Top Navigation Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-800 pb-4 shrink-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-200 pb-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3 text-white">
-            <MonitorPlay className="text-blue-500 w-7 h-7" />
+          <h1 className="text-2xl font-bold flex items-center gap-3 text-slate-800">
+            <MonitorPlay className="text-blue-600 w-7 h-7" />
             CCTV Master Control
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1">
             Live monitoring dashboard.
           </p>
         </div>
@@ -274,14 +274,14 @@ export default function CCTVGrid() {
                 : "Enable AI Detection"}
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-lg border border-slate-800 text-sm font-medium">
+          <div className="hidden sm:flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium shadow-sm">
             <Activity size={16} className="text-emerald-500 animate-pulse" />
             System Online
           </div>
 
           <button
             onClick={() => navigate("/camera/management")}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 transition-colors px-4 py-2 rounded-lg border border-slate-700 text-sm font-medium"
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 transition-colors px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium shadow-sm"
           >
             <Settings size={16} /> Manage
           </button>
@@ -294,20 +294,20 @@ export default function CCTVGrid() {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center animate-pulse">
-                <CameraIcon className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">
+                <CameraIcon className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-500">
                   Connecting to camera streams...
                 </p>
               </div>
             </div>
           ) : cameras.length === 0 ? (
-            <div className="flex items-center justify-center h-[60vh] bg-slate-900/50 rounded-2xl border border-slate-800 border-dashed">
+            <div className="flex items-center justify-center h-[60vh] bg-slate-100/50 rounded-2xl border border-slate-300 border-dashed">
               <div className="text-center max-w-sm">
                 <ShieldAlert className="w-16 h-16 text-emerald-600 mx-auto mb-4 opacity-80" />
-                <h3 className="text-xl font-bold text-white mb-2">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
                   No Cameras Configured
                 </h3>
-                <p className="text-slate-400 mb-6 font-medium text-sm">
+                <p className="text-slate-500 mb-6 font-medium text-sm">
                   The CCTV system requires camera location records to generate
                   the grid.
                 </p>
@@ -333,10 +333,10 @@ export default function CCTVGrid() {
                 return (
                   <div
                     key={camera.id}
-                    className={`relative bg-black rounded-xl overflow-hidden border ${isAiActive && isCamOn ? "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]" : "border-slate-800 shadow-2xl"} group flex flex-col h-full transition-all`}
+                    className={`relative bg-white rounded-xl overflow-hidden border ${isAiActive && isCamOn ? "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]" : "border-slate-200 shadow-sm"} group flex flex-col h-full transition-all`}
                   >
                     {/* Video Area */}
-                    <div className="relative flex-1 w-full bg-slate-900 flex items-center justify-center overflow-hidden">
+                    <div className="relative flex-1 w-full bg-slate-100 flex items-center justify-center overflow-hidden">
                       {showLiveLocalStream ? (
                         <video
                           autoPlay
@@ -354,9 +354,9 @@ export default function CCTVGrid() {
                           }}
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center pattern-lines pattern-slate-800 pattern-bg-transparent pattern-size-4 pattern-opacity-10">
-                          <CameraIcon className="w-10 h-10 text-slate-700 mb-2 opacity-50" />
-                          <span className="text-slate-500 font-mono text-xs uppercase font-bold tracking-widest bg-slate-950/80 px-2 py-1 rounded">
+                        <div className="absolute inset-0 bg-slate-100 flex flex-col items-center justify-center pattern-lines pattern-slate-200 pattern-bg-transparent pattern-size-4 pattern-opacity-50">
+                          <CameraIcon className="w-10 h-10 text-slate-400 mb-2" />
+                          <span className="text-slate-600 font-mono text-xs uppercase font-bold tracking-widest bg-white/80 px-2 py-1 rounded shadow-sm">
                             No Signal
                           </span>
                         </div>
@@ -369,11 +369,11 @@ export default function CCTVGrid() {
 
                       {/* Overlay Badges */}
                       <div className="absolute top-3 left-3 flex gap-2">
-                        <div className="bg-black/80 backdrop-blur-md px-2 py-1 rounded border border-white/10 text-[10px] font-mono font-bold uppercase tracking-wider text-white">
+                        <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider text-white shadow-sm">
                           cam-{camera.id.toString().padStart(3, "0")}
                         </div>
                         {isAiActive && isCamOn && (
-                          <div className="bg-red-600 backdrop-blur-md px-2 py-1 rounded border border-red-500 text-[10px] font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5 animate-pulse">
+                          <div className="bg-red-600 backdrop-blur-md px-2 py-1 rounded border border-red-500 text-[10px] font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5 animate-pulse shadow-sm">
                             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>{" "}
                             AI ACTIVE
                           </div>
@@ -382,9 +382,9 @@ export default function CCTVGrid() {
                     </div>
 
                     {/* Metadata Bar */}
-                    <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0 flex items-center justify-between">
+                    <div className="bg-white border-t border-slate-200 p-3 shrink-0 flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-bold text-slate-100">
+                        <h4 className="text-sm font-bold text-slate-800">
                           {camera.location}
                         </h4>
                         <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
@@ -398,7 +398,7 @@ export default function CCTVGrid() {
                         )}
                         <button
                           onClick={() => toggleCamera(camera.id)}
-                          className={`flex items-center justify-center transition-colors ${isCamOn ? "text-emerald-500 hover:text-emerald-400" : "text-slate-600 hover:text-slate-400"}`}
+                          className={`flex items-center justify-center transition-colors ${isCamOn ? "text-emerald-500 hover:text-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
                           title={isCamOn ? "Turn Camera Off" : "Turn Camera On"}
                         >
                           {isCamOn ? (
@@ -418,9 +418,9 @@ export default function CCTVGrid() {
 
         {/* Right Sidebar: Alert Feed */}
         {isAiActive && (
-          <div className="w-80 flex-shrink-0 bg-slate-900 rounded-xl border border-slate-800 flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-300">
-            <div className="bg-red-950 border-b border-red-900/50 p-4 shrink-0 flex items-center justify-between">
-              <h3 className="text-red-400 font-bold flex items-center gap-2">
+          <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-300">
+            <div className="bg-red-50 border-b border-red-100 p-4 shrink-0 flex items-center justify-between">
+              <h3 className="text-red-600 font-bold flex items-center gap-2">
                 <ShieldAlert size={18} />
                 Live AI Alerts
               </h3>
