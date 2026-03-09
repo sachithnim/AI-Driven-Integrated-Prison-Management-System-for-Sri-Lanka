@@ -16,6 +16,11 @@ import HomeLeave from "../layouts/rehabilitation/HomeLeave";
 import InmateMapView from "../layouts/rehabilitation/InmateMapView";
 import InmateDetail from "../layouts/inmates/InmateDetail";
 import Incidents from "../layouts/violations/Incidents";
+import SurveyCamera from "../layouts/survey/SurveyCamera";
+import SupportDocs from "../layouts/survey/SupportDocs";
+import InmatesHistory from "../layouts/wellness/InmatesHistory";
+import CommonDocs from "../layouts/wellness/CommonDocs";
+
 
 export const router = createBrowserRouter([
   {
@@ -76,6 +81,27 @@ export const router = createBrowserRouter([
             element: <InmateMapView />,
           },
         ],
+      },
+      {
+        path: "/survey",
+        children: [
+          {
+            index: true,
+            element: <SurveyCamera/>,
+          },
+          {
+            path: "support-docs",
+            element: <SupportDocs />
+          },
+          {
+            path: "history",
+            element: <InmatesHistory />
+          },
+          {
+            path: "common-docs",
+            element: <CommonDocs />
+          },
+        ]
       },
       {
         path: "/inmates",
