@@ -32,6 +32,10 @@ public class Cell {
     @Column(length = 20)
     private String gender; // MALE, FEMALE
 
+    @ManyToOne
+    @JoinColumn(name = "prison_id")
+    private Prison prison;
+
     // Helper method to get full cell identifier
     public String getFullCellId() {
         return block + "-" + cellNumber;

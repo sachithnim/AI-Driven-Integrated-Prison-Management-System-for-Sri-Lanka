@@ -17,8 +17,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     
-    # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000", "http://localhost"]
+    # CORS — extend with HTTPS variants and LAN IPs for mobile access
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost", "http://localhost:5173", "http://localhost:3000",
+        "https://localhost", "https://localhost:5173",
+    ]
 
     class Config:
         env_file = ".env"

@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "home_leaves")
+@Table(name = "license_releases")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class HomeLeave {
+public class LicenseRelease {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,43 +22,33 @@ public class HomeLeave {
     private String inmateId;
 
     @Column(nullable = false)
-    private LocalDateTime startDate;
+    private LocalDateTime releaseDate;
 
     @Column(nullable = false)
-    private LocalDateTime endDate;
+    private LocalDateTime licenseExpiryDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private HomeLeaveStatus status = HomeLeaveStatus.PENDING;
-
-    @Column(nullable = false)
-    private String reason; // reason for home leave request
-
-    private String approvedBy; // officer ID who approved
+    private LicenseReleaseStatus status = LicenseReleaseStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
-    private String conditions; // conditions/restrictions during leave
+    private String conditions;
 
-    private String destinationAddress;
+    private String supervisorId;
 
-    private String contactPhone;
+    private String supervisorName;
 
-    private Boolean gpsRequired = true;
+    private String supervisorContact;
 
-    // Geofence boundary settings
-    private Double geofenceCenterLat;
-    private Double geofenceCenterLng;
-    private Double geofenceRadiusMeters; // allowed radius in meters
-
-    // Last known GPS position (updated via GPS endpoint)
-    private Double lastKnownLat;
-
-    private Double lastKnownLng;
-
-    private LocalDateTime lastLocationUpdate;
+    private Boolean violated = false;
 
     @Column(columnDefinition = "TEXT")
-    private String notes; // officer notes on the leave
+    private String revocationReason;
+
+    private String approvedBy;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

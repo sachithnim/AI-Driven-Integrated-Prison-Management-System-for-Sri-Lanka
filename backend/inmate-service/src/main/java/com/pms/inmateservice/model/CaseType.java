@@ -1,6 +1,118 @@
 package com.pms.inmateservice.model;
 
+/**
+ * Comprehensive Sri Lankan Accusation (Case Type) classification.
+ * Based on official Department of Prisons documentation.
+ * Categories: A (Against Persons), B (Against Property), C (Public
+ * Tranquility),
+ * D (Other), E (Special Regulations), F (Child Abuse)
+ */
 public enum CaseType {
+    // ── A: Against Persons ─────────────────────────────────────────────────
+    A_MURDER,
+    A_ATTEMPTED_MURDER,
+    A_CULPABLE_HOMICIDE,
+    A_ATTEMPTED_CULPABLE_HOMICIDE,
+    A_KIDNAPPING,
+    A_RAPE,
+    A_RAPE_CUSTODY,
+    A_RAPE_PREGNANT_WOMAN,
+    A_RAPE_WOMAN_OVER_18,
+    A_RAPE_WOMAN_UNDER_18,
+    A_RAPE_HANDICAPPED_WOMAN,
+    A_GANG_RAPE,
+    A_GRIEVOUS_HURT,
+    A_SIMPLE_HURT,
+    A_BIGAMY,
+    A_UNNATURAL_OFFENCE,
+    A_CONCEALMENT_OF_BIRTH,
+    A_CRIMINAL_FORCE,
+    A_CRIMINAL_INTIMIDATION,
+    A_UNLAWFUL_INTERCOURSE,
+    A_ABORTION,
+    A_ATTEMPT_SUICIDE,
+    A_DEATH_BY_RECKLESS_DRIVING,
+    A_GRIEVOUS_INJURY_RECKLESS_DRIVING,
+    A_SEXUAL_HARASSMENT,
+    A_GROSS_INDECENCY,
+    A_SALE_OF_PERSON,
+    A_COURT_MARTIAL,
+    A_OTHER_AGAINST_PERSONS,
+
+    // ── B: Against Property ────────────────────────────────────────────────
+    B_BURGLARY,
+    B_ROBBERY,
+    B_TRESPASS_HOUSE_BREAKING,
+    B_POSSESSION_HOUSEBREAKING_TOOLS,
+    B_EXTORTION,
+    B_LOOTING,
+    B_CATTLE_THEFT,
+    B_STOLEN_PROPERTY,
+    B_CHEATING,
+    B_CRIMINAL_BREACH_OF_TRUST,
+    B_CRIMINAL_MISAPPROPRIATION,
+    B_ARSON,
+    B_CAUSING_DAMAGE,
+    B_MISCHIEF,
+    B_FOUND_IN_BUILDINGS,
+    B_THEFT,
+    B_FORGERY,
+    B_COUNTERFEITING,
+    B_BRIBERY,
+    B_CRUELTY_TO_ANIMALS,
+    B_OTHER_AGAINST_PROPERTY,
+
+    // ── C: Against Public Tranquility ──────────────────────────────────────
+    C_APPEARING_DRUNK,
+    C_DISORDERLY_BEHAVIOUR,
+    C_CLEARING_CROWN_LAND,
+    C_COMMITTING_AFFRAY,
+    C_ENTERING_PORT_WITHOUT_PERMIT,
+    C_FAILURE_TO_REPORT_POLICE,
+    C_FALSE_EVIDENCE,
+    C_LODGING_IN_VERANDAH,
+    C_MANAGING_BROTHEL,
+    C_POSSESSING_PROHIBITED_KNIFE,
+    C_OBSTRUCTION_GOVT_OFFICERS,
+    C_PROFITEERING,
+    C_RIOTING,
+    C_TRAVELLING_WITHOUT_TICKETS,
+    C_UNLAWFUL_ASSEMBLY,
+    C_UNLAWFUL_BETTING_GAMBLING,
+    C_USING_EXPLOSIVES_FISHING,
+    C_VIEWING_BLUE_FILMS,
+    C_ILLEGAL_GEMMING,
+    C_UNLICENSED_FIREARMS,
+    C_NON_PAYMENT_INCOME_TAX,
+    C_OTHER_PUBLIC_TRANQUILITY,
+
+    // ── D: Other Accusations ───────────────────────────────────────────────
+    D_EXCISE,
+    D_MAINTENANCE,
+    D_MOTOR_OFFENCE,
+    D_NARCOTIC_DRUGS,
+    D_OTHER,
+
+    // ── E: Special Regulations ─────────────────────────────────────────────
+    E_EMERGENCY_REGULATIONS,
+    E_PREVENTION_OF_TERRORISM,
+
+    // ── F: Child Abuse ─────────────────────────────────────────────────────
+    F_CHILDREN_PHOTOGRAPHY,
+    F_CRUELTY_TO_CHILDREN,
+    F_SEXUAL_ABUSE_CHILDREN,
+    F_INCEST,
+    F_CHILDREN_BEGGING,
+    F_SEXUAL_INTERCOURSE_CHILDREN,
+    F_CHILDREN_SEXUAL_ACTIVITIES,
+    F_CHILDREN_DRUG_TRAFFICKING,
+    F_UNNATURAL_CHILDREN_UNDER_16,
+    F_GROSS_INDECENCY_CHILDREN_UNDER_16,
+    F_PROCURATION,
+    F_SALE_OF_CHILDREN_UNDER_18,
+    F_RAPE_GIRL_UNDER_16,
+
+    // ── Legacy compatibility ───────────────────────────────────────────────
     MURDER,
     MANSLAUGHTER,
     ASSAULT,

@@ -110,4 +110,16 @@ public class HomeLeaveController {
     public ResponseEntity<List<GPSLocation>> getGPSHistory(@PathVariable Long id) {
         return ResponseEntity.ok(homeLeaveService.getGPSHistory(id));
     }
+
+    // ── Geofence Management ───────────────────────────────────────────────────
+
+    @PutMapping("/{id}/geofence")
+    @Operation(summary = "Set or update the geofence boundary for a home leave")
+    public ResponseEntity<HomeLeaveResponse> updateGeofence(
+            @PathVariable Long id,
+            @RequestParam Double lat,
+            @RequestParam Double lng,
+            @RequestParam Double radiusMeters) {
+        return ResponseEntity.ok(homeLeaveService.updateGeofence(id, lat, lng, radiusMeters));
+    }
 }

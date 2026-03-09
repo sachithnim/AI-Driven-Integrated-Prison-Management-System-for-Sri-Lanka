@@ -3,7 +3,11 @@ import useWebSocket from "react-use-websocket";
 import { AlertTriangle, ShieldCheck, Play, Video } from "lucide-react";
 export default function AlertFeed() {
   const [alerts, setAlerts] = useState([]);
-  const socketUrl = "ws://localhost:8003/api/v1/ws/alerts";
+  // const socketUrl = "ws://localhost:8003/api/v1/ws/alerts";
+
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const socketUrl = `${wsProtocol}//${window.location.host}/api/v1/ws/alerts`;
+
   const { lastMessage } = useWebSocket(socketUrl, {
     shouldReconnect: (closeEvent) => true,
   });

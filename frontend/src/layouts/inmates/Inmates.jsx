@@ -16,13 +16,23 @@ export default function Inmates() {
         lastName: '',
         dateOfBirth: '',
         gender: 'MALE',
-        caseType: 'OTHER',
+        caseType: 'D_OTHER',
+        convictionStatus: 'UNCONVICTED',
         sentenceStartDate: '',
         sentenceEndDate: '',
         sentenceDurationMonths: 0,
         securityLevel: 'MEDIUM',
         currentFacility: 'Main Prison',
-        admissionDate: new Date().toISOString().split('T')[0]
+        admissionDate: new Date().toISOString().split('T')[0],
+        // New demographic fields
+        religion: '',
+        maritalStatus: '',
+        literacyLevel: '',
+        previousConvictions: 0,
+        previousPunishments: '',
+        incomeLevel: '',
+        addictions: '',
+        occupation: '',
     });
 
     useEffect(() => {
@@ -67,13 +77,22 @@ export default function Inmates() {
             lastName: '',
             dateOfBirth: '',
             gender: 'MALE',
-            caseType: 'OTHER',
+            caseType: 'D_OTHER',
+            convictionStatus: 'UNCONVICTED',
             sentenceStartDate: '',
             sentenceEndDate: '',
             sentenceDurationMonths: 0,
             securityLevel: 'MEDIUM',
             currentFacility: 'Main Prison',
-            admissionDate: new Date().toISOString().split('T')[0]
+            admissionDate: new Date().toISOString().split('T')[0],
+            religion: '',
+            maritalStatus: '',
+            literacyLevel: '',
+            previousConvictions: 0,
+            previousPunishments: '',
+            incomeLevel: '',
+            addictions: '',
+            occupation: '',
         });
     };
 
@@ -203,27 +222,120 @@ export default function Inmates() {
                                 </select>
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-gray-700">Conviction Status</label>
+                                <select name="convictionStatus" value={formData.convictionStatus} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="UNCONVICTED">Unconvicted (Remand)</option>
+                                    <option value="CONVICTED">Convicted (Sentenced)</option>
+                                    <option value="APPEAL">Appeal</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700">Case Type</label>
                                 <select name="caseType" value={formData.caseType} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
-                                    <option value="MURDER">Murder</option>
-                                    <option value="MANSLAUGHTER">Manslaughter</option>
-                                    <option value="ASSAULT">Assault</option>
-                                    <option value="ROBBERY">Robbery</option>
-                                    <option value="BURGLARY">Burglary</option>
-                                    <option value="THEFT">Theft</option>
-                                    <option value="DRUG_TRAFFICKING">Drug Trafficking</option>
-                                    <option value="DRUG_POSSESSION">Drug Possession</option>
-                                    <option value="FRAUD">Fraud</option>
-                                    <option value="EMBEZZLEMENT">Embezzlement</option>
-                                    <option value="RAPE">Rape</option>
-                                    <option value="SEXUAL_ASSAULT">Sexual Assault</option>
-                                    <option value="KIDNAPPING">Kidnapping</option>
-                                    <option value="ARSON">Arson</option>
-                                    <option value="TERRORISM">Terrorism</option>
-                                    <option value="CYBERCRIME">Cybercrime</option>
-                                    <option value="DOMESTIC_VIOLENCE">Domestic Violence</option>
-                                    <option value="HUMAN_TRAFFICKING">Human Trafficking</option>
-                                    <option value="OTHER">Other</option>
+                                    <optgroup label="A - Against Persons">
+                                        <option value="A_MURDER">Murder</option>
+                                        <option value="A_ATTEMPTED_MURDER">Attempted Murder</option>
+                                        <option value="A_CULPABLE_HOMICIDE">Culpable Homicide</option>
+                                        <option value="A_ATTEMPTED_CULPABLE_HOMICIDE">Attempted Culpable Homicide</option>
+                                        <option value="A_KIDNAPPING">Kidnapping</option>
+                                        <option value="A_RAPE">Rape</option>
+                                        <option value="A_RAPE_CUSTODY">Rape - Person in Custody</option>
+                                        <option value="A_RAPE_PREGNANT_WOMAN">Rape - Pregnant Woman</option>
+                                        <option value="A_RAPE_WOMAN_OVER_18">Rape - Woman Over 18</option>
+                                        <option value="A_RAPE_WOMAN_UNDER_18">Rape - Woman Under 18</option>
+                                        <option value="A_RAPE_HANDICAPPED_WOMAN">Rape - Handicapped Woman</option>
+                                        <option value="A_GANG_RAPE">Gang Rape</option>
+                                        <option value="A_GRIEVOUS_HURT">Grievous Hurt</option>
+                                        <option value="A_SIMPLE_HURT">Simple Hurt</option>
+                                        <option value="A_BIGAMY">Bigamy</option>
+                                        <option value="A_UNNATURAL_OFFENCE">Unnatural Offence</option>
+                                        <option value="A_CONCEALMENT_OF_BIRTH">Concealment of Birth</option>
+                                        <option value="A_CRIMINAL_FORCE">Criminal Force</option>
+                                        <option value="A_CRIMINAL_INTIMIDATION">Criminal Intimidation</option>
+                                        <option value="A_UNLAWFUL_INTERCOURSE">Unlawful Intercourse</option>
+                                        <option value="A_ABORTION">Abortion / Attempt</option>
+                                        <option value="A_ATTEMPT_SUICIDE">Attempt Suicide / Abetment</option>
+                                        <option value="A_DEATH_BY_RECKLESS_DRIVING">Death by Reckless Driving</option>
+                                        <option value="A_GRIEVOUS_INJURY_RECKLESS_DRIVING">Grievous Injury by Reckless Driving</option>
+                                        <option value="A_SEXUAL_HARASSMENT">Sexual Harassment</option>
+                                        <option value="A_GROSS_INDECENCY">Acts of Gross Indecency</option>
+                                        <option value="A_SALE_OF_PERSON">Sale of Person</option>
+                                        <option value="A_COURT_MARTIAL">Court Martial Punishment</option>
+                                        <option value="A_OTHER_AGAINST_PERSONS">Other Against Persons</option>
+                                    </optgroup>
+                                    <optgroup label="B - Against Property">
+                                        <option value="B_BURGLARY">Burglary</option>
+                                        <option value="B_ROBBERY">Robbery</option>
+                                        <option value="B_TRESPASS_HOUSE_BREAKING">Trespass / House Breaking</option>
+                                        <option value="B_POSSESSION_HOUSEBREAKING_TOOLS">Possession of House Breaking Tools</option>
+                                        <option value="B_EXTORTION">Extortion</option>
+                                        <option value="B_LOOTING">Looting</option>
+                                        <option value="B_CATTLE_THEFT">Cattle Theft</option>
+                                        <option value="B_STOLEN_PROPERTY">Acceptance/Retention of Stolen Property</option>
+                                        <option value="B_CHEATING">Cheating</option>
+                                        <option value="B_CRIMINAL_BREACH_OF_TRUST">Criminal Breach of Trust</option>
+                                        <option value="B_CRIMINAL_MISAPPROPRIATION">Criminal Misappropriation</option>
+                                        <option value="B_ARSON">Arson</option>
+                                        <option value="B_CAUSING_DAMAGE">Causing Damage</option>
+                                        <option value="B_MISCHIEF">Mischief</option>
+                                        <option value="B_FOUND_IN_BUILDINGS">Found in Buildings</option>
+                                        <option value="B_THEFT">Theft</option>
+                                        <option value="B_FORGERY">Forgery</option>
+                                        <option value="B_COUNTERFEITING">Counterfeiting of Currency</option>
+                                        <option value="B_BRIBERY">Bribery</option>
+                                        <option value="B_CRUELTY_TO_ANIMALS">Cruelty to Animals</option>
+                                        <option value="B_OTHER_AGAINST_PROPERTY">Other Against Property</option>
+                                    </optgroup>
+                                    <optgroup label="C - Public Tranquility / State Law">
+                                        <option value="C_APPEARING_DRUNK">Appearing in Public Drunk</option>
+                                        <option value="C_DISORDERLY_BEHAVIOUR">Disorderly Behaviour</option>
+                                        <option value="C_CLEARING_CROWN_LAND">Clearing Crown Land</option>
+                                        <option value="C_COMMITTING_AFFRAY">Committing Affray</option>
+                                        <option value="C_ENTERING_PORT_WITHOUT_PERMIT">Entering Port without Permit</option>
+                                        <option value="C_FAILURE_TO_REPORT_POLICE">Failure to Report to Police</option>
+                                        <option value="C_FALSE_EVIDENCE">Giving False Evidence</option>
+                                        <option value="C_LODGING_IN_VERANDAH">Lodging in Verandah</option>
+                                        <option value="C_MANAGING_BROTHEL">Managing a Brothel</option>
+                                        <option value="C_POSSESSING_PROHIBITED_KNIFE">Possessing Prohibited Knife</option>
+                                        <option value="C_OBSTRUCTION_GOVT_OFFICERS">Obstruction of Govt Officers</option>
+                                        <option value="C_PROFITEERING">Profiteering</option>
+                                        <option value="C_RIOTING">Rioting</option>
+                                        <option value="C_TRAVELLING_WITHOUT_TICKETS">Travelling without Tickets</option>
+                                        <option value="C_UNLAWFUL_ASSEMBLY">Unlawful Assembly</option>
+                                        <option value="C_UNLAWFUL_BETTING_GAMBLING">Unlawful Betting/Gambling</option>
+                                        <option value="C_USING_EXPLOSIVES_FISHING">Using Explosives to Kill Fish</option>
+                                        <option value="C_VIEWING_BLUE_FILMS">Viewing Blue Films</option>
+                                        <option value="C_ILLEGAL_GEMMING">Illegally Gemming</option>
+                                        <option value="C_UNLICENSED_FIREARMS">Unlicensed Firearms</option>
+                                        <option value="C_NON_PAYMENT_INCOME_TAX">Non-payment of Income Tax</option>
+                                        <option value="C_OTHER_PUBLIC_TRANQUILITY">Other Public Tranquility</option>
+                                    </optgroup>
+                                    <optgroup label="D - Other Accusations">
+                                        <option value="D_EXCISE">Excise Accusation</option>
+                                        <option value="D_MAINTENANCE">Maintenance</option>
+                                        <option value="D_MOTOR_OFFENCE">Motor Accusation</option>
+                                        <option value="D_NARCOTIC_DRUGS">Narcotic Drugs</option>
+                                        <option value="D_OTHER">Other</option>
+                                    </optgroup>
+                                    <optgroup label="E - Special Regulations">
+                                        <option value="E_EMERGENCY_REGULATIONS">Emergency Regulations</option>
+                                        <option value="E_PREVENTION_OF_TERRORISM">Prevention of Terrorism</option>
+                                    </optgroup>
+                                    <optgroup label="F - Child Abuse">
+                                        <option value="F_CHILDREN_PHOTOGRAPHY">Children for Photographic Publications</option>
+                                        <option value="F_CRUELTY_TO_CHILDREN">Cruelty to Children</option>
+                                        <option value="F_SEXUAL_ABUSE_CHILDREN">Sexual Abuse of Children</option>
+                                        <option value="F_INCEST">Incest</option>
+                                        <option value="F_CHILDREN_BEGGING">Children Involvement in Begging</option>
+                                        <option value="F_SEXUAL_INTERCOURSE_CHILDREN">Sexual Intercourse with Children</option>
+                                        <option value="F_CHILDREN_SEXUAL_ACTIVITIES">Children in Sexual Activities</option>
+                                        <option value="F_CHILDREN_DRUG_TRAFFICKING">Children in Drug Trafficking</option>
+                                        <option value="F_UNNATURAL_CHILDREN_UNDER_16">Unnatural Offence (Under 16)</option>
+                                        <option value="F_GROSS_INDECENCY_CHILDREN_UNDER_16">Gross Indecency (Under 16)</option>
+                                        <option value="F_PROCURATION">Procuration</option>
+                                        <option value="F_SALE_OF_CHILDREN_UNDER_18">Sale of Children (Under 18)</option>
+                                        <option value="F_RAPE_GIRL_UNDER_16">Rape of Girl (Under 16)</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             <div>
@@ -254,7 +366,109 @@ export default function Inmates() {
                                     <option value="MAXIMUM">Maximum</option>
                                 </select>
                             </div>
-                            
+
+                            {/* ── Demographic & Background Fields ── */}
+                            <div className="col-span-2 border-t border-gray-200 pt-4 mt-2">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Demographic & Background Information</h3>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Religion</label>
+                                <select name="religion" value={formData.religion} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="Buddhist">Buddhist</option>
+                                    <option value="Hindu">Hindu</option>
+                                    <option value="Islam">Islam</option>
+                                    <option value="Roman Catholic">Roman Catholic</option>
+                                    <option value="Other Christian">Other Christian</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Marital Status</label>
+                                <select name="maritalStatus" value={formData.maritalStatus} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="Never Married">Never Married</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Widowed">Widowed</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Legally Separated">Legally Separated</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Literacy Level</label>
+                                <select name="literacyLevel" value={formData.literacyLevel} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="No Schooling">No Schooling</option>
+                                    <option value="Grade 1-5">Grade 1–5</option>
+                                    <option value="Passed Grade 5">Passed Grade 5</option>
+                                    <option value="Passed Grade 8">Passed Grade 8</option>
+                                    <option value="GCE O/L">Passed G.C.E. (O/L)</option>
+                                    <option value="GCE A/L">Passed G.C.E. (A/L)</option>
+                                    <option value="Graduate">Graduate</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Previous Convictions</label>
+                                <input type="number" name="previousConvictions" min="0" value={formData.previousConvictions} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Previous Punishments</label>
+                                <select name="previousPunishments" value={formData.previousPunishments} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="None">None</option>
+                                    <option value="Warned & Discharged">Warned & Discharged</option>
+                                    <option value="Fined">Fined</option>
+                                    <option value="Probation">Probation</option>
+                                    <option value="Prison">Prison</option>
+                                    <option value="Remand Custody">Remand Custody Before Conviction</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Income Level</label>
+                                <select name="incomeLevel" value={formData.incomeLevel} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="No Income">No Income</option>
+                                    <option value="Below Rs.3000/month">Below Rs.3,000/month</option>
+                                    <option value="Rs.3000 & Over/month">Rs.3,000 & Over/month</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Addictions</label>
+                                <select name="addictions" value={formData.addictions} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="None">None</option>
+                                    <option value="Alcohol - Moderate">Alcohol (Moderate)</option>
+                                    <option value="Alcohol - Excessive">Alcohol (Excessive)</option>
+                                    <option value="Drugs - Moderate">Drugs (Moderate)</option>
+                                    <option value="Drugs - Excessive">Drugs (Excessive)</option>
+                                    <option value="Gambling - Moderate">Gambling (Moderate)</option>
+                                    <option value="Gambling - Excessive">Gambling (Excessive)</option>
+                                    <option value="Multiple">Multiple Addictions</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Occupation</label>
+                                <select name="occupation" value={formData.occupation} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                    <option value="">-- Select --</option>
+                                    <option value="Cultivator">Cultivator</option>
+                                    <option value="Fisherman">Fisherman</option>
+                                    <option value="Skilled Labour">Skilled Labour</option>
+                                    <option value="Unskilled Labour">Unskilled Labour</option>
+                                    <option value="Driver">Driver</option>
+                                    <option value="Businessman">Businessman</option>
+                                    <option value="Mason">Mason</option>
+                                    <option value="Carpenter">Carpenter</option>
+                                    <option value="Tailor">Tailor</option>
+                                    <option value="Clerical">Clerical & Inspector</option>
+                                    <option value="Housewife">Housewife</option>
+                                    <option value="Student">Student</option>
+                                    <option value="Armed Forces">Armed Forces</option>
+                                    <option value="Police">Police</option>
+                                    <option value="Unemployed">Unemployed</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
                             <div className="col-span-2 mt-4 flex justify-end gap-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
                                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">

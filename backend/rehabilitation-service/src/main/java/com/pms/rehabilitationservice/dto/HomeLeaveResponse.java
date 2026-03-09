@@ -25,6 +25,11 @@ public class HomeLeaveResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Geofence
+    private Double geofenceCenterLat;
+    private Double geofenceCenterLng;
+    private Double geofenceRadiusMeters;
+
     // Convenience helpers
     private long durationDays;
     private boolean isActive;

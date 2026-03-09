@@ -18,6 +18,7 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
+
 # Create static directory if it doesn't exist
 os.makedirs("app/static/incidents", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -29,10 +30,14 @@ origins = [
     "http://localhost:3000",
 ]
 
+
+# CORS — allow localhost on any port and any 192.168.x.x LAN IP (for phone access)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],          # Vite proxy makes most requests same-origin;
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?",
+    allow_credentials=False,      # cannot combine credentials=True with allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )

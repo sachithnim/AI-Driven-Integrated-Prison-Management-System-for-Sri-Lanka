@@ -132,6 +132,18 @@ export default function InmateDetail() {
                     </h2>
                     <dl className="space-y-3 text-sm">
                         <div className="flex justify-between">
+                            <dt className="text-gray-500">Conviction Status</dt>
+                            <dd>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                    inmate.convictionStatus === 'CONVICTED' ? 'bg-red-100 text-red-700' :
+                                    inmate.convictionStatus === 'APPEAL' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-blue-100 text-blue-700'
+                                }`}>
+                                    {inmate.convictionStatus || 'UNCONVICTED'}
+                                </span>
+                            </dd>
+                        </div>
+                        <div className="flex justify-between">
                             <dt className="text-gray-500">Admission Date</dt>
                             <dd className="font-medium text-gray-900">{inmate.admissionDate}</dd>
                         </div>
@@ -146,6 +158,47 @@ export default function InmateDetail() {
                         <div className="flex justify-between">
                             <dt className="text-gray-500">Duration</dt>
                             <dd className="font-medium text-gray-900">{inmate.sentenceDurationMonths} months</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                {/* Demographic & Background Information */}
+                <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
+                    <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5" /> Demographic & Background
+                    </h2>
+                    <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <dt className="text-gray-500">Religion</dt>
+                            <dd className="font-medium text-gray-900">{inmate.religion || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Marital Status</dt>
+                            <dd className="font-medium text-gray-900">{inmate.maritalStatus || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Literacy Level</dt>
+                            <dd className="font-medium text-gray-900">{inmate.literacyLevel || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Previous Convictions</dt>
+                            <dd className="font-medium text-gray-900">{inmate.previousConvictions ?? '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Previous Punishments</dt>
+                            <dd className="font-medium text-gray-900">{inmate.previousPunishments || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Income Level</dt>
+                            <dd className="font-medium text-gray-900">{inmate.incomeLevel || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Addictions</dt>
+                            <dd className="font-medium text-gray-900">{inmate.addictions || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Occupation</dt>
+                            <dd className="font-medium text-gray-900">{inmate.occupation || '—'}</dd>
                         </div>
                     </dl>
                 </div>

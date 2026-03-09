@@ -15,37 +15,41 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Bean
-    public CorsWebFilter corsWebFilter() {
-        CorsConfiguration corsConfig = new CorsConfiguration();
+        @Bean
+        public CorsWebFilter corsWebFilter() {
+                CorsConfiguration corsConfig = new CorsConfiguration();
 
-        // Allow requests from these origins
-        corsConfig.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*"));
+                // Allow requests from these origins
+                corsConfig.setAllowedOriginPatterns(List.of(
+                                "http://localhost:*",
+                                "https://localhost:*",
+                                "http://127.0.0.1:*",
+                                "https://127.0.0.1:*",
+                                "http://192.168.*.*:*",
+                                "https://192.168.*.*:*"));
 
-        // Allow all HTTP methods
-        corsConfig.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                // Allow all HTTP methods
+                corsConfig.setAllowedMethods(List.of(
+                                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
-        // Allow all headers
-        corsConfig.setAllowedHeaders(List.of("*"));
+                // Allow all headers
+                corsConfig.setAllowedHeaders(List.of("*"));
 
-        // Allow credentials (cookies, authorization headers)
-        corsConfig.setAllowCredentials(true);
+                // Allow credentials (cookies, authorization headers)
+                corsConfig.setAllowCredentials(true);
 
-        // Cache preflight response for 1 hour
-        corsConfig.setMaxAge(3600L);
+                // Cache preflight response for 1 hour
+                corsConfig.setMaxAge(3600L);
 
-        // Expose these headers to the client
-        corsConfig.setExposedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "X-Total-Count"));
+                // Expose these headers to the client
+                corsConfig.setExposedHeaders(List.of(
+                                "Authorization",
+                                "Content-Type",
+                                "X-Total-Count"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfig);
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", corsConfig);
 
-        return new CorsWebFilter(source);
-    }
+                return new CorsWebFilter(source);
+        }
 }

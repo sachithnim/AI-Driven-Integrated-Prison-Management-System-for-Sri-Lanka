@@ -1,4 +1,4 @@
-package com.pms.inmateservice.config;
+package com.pms.rehabilitationservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

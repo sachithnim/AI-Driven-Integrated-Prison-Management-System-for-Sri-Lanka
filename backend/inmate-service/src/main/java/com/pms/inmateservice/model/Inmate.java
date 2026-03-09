@@ -51,7 +51,37 @@ public class Inmate {
     @Column(length = 20)
     private String contactNumber;
 
+    // Demographic & Background Information (for AI assessment)
+    @Column(length = 50)
+    private String religion; // Buddhist, Hindu, Islam, Roman Catholic, Other Christian, Other
+
+    @Column(length = 50)
+    private String maritalStatus; // Never Married, Married, Widowed, Divorced, Legally Separated
+
+    @Column(length = 50)
+    private String literacyLevel; // No Schooling, Grade 1-5, Passed Grade 5, Passed Grade 8, GCE O/L, GCE A/L,
+                                  // Graduate
+
+    private Integer previousConvictions; // Number of previous convictions (0, 1, 2, 3+)
+
+    @Column(length = 100)
+    private String previousPunishments; // None, Warned & Discharged, Fined, Probation, Prison, Remand Custody
+
+    @Column(length = 50)
+    private String incomeLevel; // No Income, Below Rs.3000/month, Rs.3000 & Over/month
+
+    @Column(length = 500)
+    private String addictions; // JSON: {"alcohol":"excessive","drugs":"moderate","gambling":"not_addicted"}
+
+    @Column(length = 200)
+    private String occupation; // Cultivator, Fisherman, Skilled Labour, Unskilled Labour, Driver, Businessman,
+                               // etc.
+
     // Case Information
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ConvictionStatus convictionStatus = ConvictionStatus.UNCONVICTED;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CaseType caseType;

@@ -192,7 +192,7 @@ export default function Rehabilitation() {
       time_served_months: timeServedMonths,
       sentence_length_months: inmate.sentenceDurationMonths ?? null,
       total_incidents: inmate.totalIncidents ?? 0,
-      has_substance_abuse: conditions.some(c => c && (c.toLowerCase().includes("substance") || c.toLowerCase().includes("drug") || c.toLowerCase().includes("withdrawal"))),
+      has_substance_abuse: conditions.some(c => c && (c.toLowerCase().includes("substance") || c.toLowerCase().includes("drug") || c.toLowerCase().includes("withdrawal"))) || (inmate.addictions && inmate.addictions.toLowerCase().includes("drug")),
       has_mental_health_issues: conditions.some(c => c && (c.toLowerCase().includes("mental") || c.toLowerCase().includes("depression") || c.toLowerCase().includes("bipolar") || c.toLowerCase().includes("schizophrenia"))),
       requires_medical_attention: conditions.length > 0,
       violent_history: inmate.violentHistory ?? false,
@@ -215,6 +215,16 @@ export default function Rehabilitation() {
       medical_conditions: conditions,
       first_name: inmate.firstName ?? null,
       last_name: inmate.lastName ?? null,
+      // Demographic & background fields
+      religion: inmate.religion ?? null,
+      marital_status: inmate.maritalStatus ?? null,
+      literacy_level: inmate.literacyLevel ?? null,
+      previous_convictions: inmate.previousConvictions ?? 0,
+      previous_punishments: inmate.previousPunishments ?? null,
+      income_level: inmate.incomeLevel ?? null,
+      addictions: inmate.addictions ?? null,
+      occupation: inmate.occupation ?? null,
+      conviction_status: inmate.convictionStatus ?? 'UNCONVICTED',
     };
   };
 
@@ -233,7 +243,7 @@ export default function Rehabilitation() {
       sentence_length_months: inmate.sentenceDurationMonths || 0,
       programs_completed: 0,
       total_attendance_rate: 0.0,
-      prior_convictions: 0,
+      prior_convictions: inmate.previousConvictions || 0,
       institutional_violations: 0,
       total_incidents: inmate.totalIncidents || 0,
       points_deducted: 0,
@@ -244,7 +254,7 @@ export default function Rehabilitation() {
             (c.toLowerCase().includes("substance") ||
               c.toLowerCase().includes("withdrawal") ||
               c.toLowerCase().includes("drug"))
-        ) || false,
+        ) || (inmate.addictions && inmate.addictions.toLowerCase().includes("drug")) || false,
       has_mental_health_issues:
         conditions.some(
           (c) =>
@@ -254,6 +264,16 @@ export default function Rehabilitation() {
               c.toLowerCase().includes("bipolar") ||
               c.toLowerCase().includes("depression"))
         ) || false,
+      // Demographic & background fields
+      religion: inmate.religion || null,
+      marital_status: inmate.maritalStatus || null,
+      literacy_level: inmate.literacyLevel || null,
+      previous_convictions: inmate.previousConvictions || 0,
+      previous_punishments: inmate.previousPunishments || null,
+      income_level: inmate.incomeLevel || null,
+      addictions: inmate.addictions || null,
+      occupation: inmate.occupation || null,
+      conviction_status: inmate.convictionStatus || 'UNCONVICTED',
     };
   };
 

@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "home_leaves")
+@Table(name = "work_releases")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class HomeLeave {
+public class WorkRelease {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,6 +22,15 @@ public class HomeLeave {
     private String inmateId;
 
     @Column(nullable = false)
+    private String employerName;
+
+    @Column(nullable = false)
+    private String workLocation;
+
+    @Column(length = 100)
+    private String workType; // Agriculture, Industry, Construction, Government
+
+    @Column(nullable = false)
     private LocalDateTime startDate;
 
     @Column(nullable = false)
@@ -29,36 +38,29 @@ public class HomeLeave {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private HomeLeaveStatus status = HomeLeaveStatus.PENDING;
+    private WorkReleaseStatus status = WorkReleaseStatus.PENDING;
 
-    @Column(nullable = false)
-    private String reason; // reason for home leave request
+    private Double totalEarnings;
 
-    private String approvedBy; // officer ID who approved
+    private String approvedBy;
 
     @Column(columnDefinition = "TEXT")
-    private String conditions; // conditions/restrictions during leave
+    private String conditions;
 
-    private String destinationAddress;
+    private Boolean gpsRequired = false;
 
-    private String contactPhone;
-
-    private Boolean gpsRequired = true;
-
-    // Geofence boundary settings
-    private Double geofenceCenterLat;
-    private Double geofenceCenterLng;
-    private Double geofenceRadiusMeters; // allowed radius in meters
-
-    // Last known GPS position (updated via GPS endpoint)
+    // GPS tracking fields
     private Double lastKnownLat;
-
     private Double lastKnownLng;
-
     private LocalDateTime lastLocationUpdate;
 
+    // Geofence
+    private Double geofenceCenterLat;
+    private Double geofenceCenterLng;
+    private Double geofenceRadiusMeters;
+
     @Column(columnDefinition = "TEXT")
-    private String notes; // officer notes on the leave
+    private String notes;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
