@@ -435,11 +435,11 @@ export default function SurveyCamera() {
                 <User className="text-blue-600 w-6 h-6" /> Inmate Wellness Enrollment
               </h2>
               <Input
-                label="Username"
+                label="Name"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={(e) => handleLookup("name", e.target.value)}
-                placeholder="Username"
+                placeholder="Enter name"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
