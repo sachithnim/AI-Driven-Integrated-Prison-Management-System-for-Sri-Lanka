@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import BackendRehabService from '../../services/rehab/backendRehabService';
+import InmateService from '../../services/inmate/inmateService';
 import { Loader2, User, Activity, Calendar, AlertCircle, Eye, X, FileText, Stethoscope, MessageSquare, TrendingUp } from 'lucide-react';
 
 export default function RehabInmates() {
     const [profiles, setProfiles] = useState([]);
+    const [inmates, setInmates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedInmate, setSelectedInmate] = useState(null);
@@ -17,14 +19,24 @@ export default function RehabInmates() {
     const fetchProfiles = async () => {
         try {
             setLoading(true);
-            const data = await BackendRehabService.getAllProfiles();
+            const [data, inmatesData] = await Promise.all([
+                BackendRehabService.getAllProfiles(),
+                InmateService.getAllInmates(),
+            ]);
             setProfiles(data);
+            setInmates(inmatesData);
         } catch (err) {
             console.error("Failed to fetch rehab profiles:", err);
             setError("Failed to load rehabilitation profiles. Please try again later.");
         } finally {
             setLoading(false);
         }
+    };
+
+    const getInmateName = (id) => {
+        const sid = String(id);
+        const inm = inmates.find((i) => String(i.id) === sid || String(i.inmateId) === sid);
+        return inm ? `${inm.firstName || ''} ${inm.lastName || ''}`.trim() : null;
     };
 
     const handleViewDetails = async (inmateId) => {
@@ -105,7 +117,7 @@ export default function RehabInmates() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Inmate ID
+                                        Inmate
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Suitability Group
@@ -133,7 +145,12 @@ export default function RehabInmates() {
                                                     <User className="h-5 w-5 text-blue-600" />
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">#{profile.inmateId}</div>
+                                                    {getInmateName(profile.inmateId) ? (
+                                                        <div className="text-sm font-medium text-gray-900">{getInmateName(profile.inmateId)}</div>
+                                                    ) : (
+                                                        <div className="text-sm font-medium text-gray-400 italic">Unknown</div>
+                                                    )}
+                                                    <div className="text-xs text-gray-400 font-mono">#{profile.inmateId}</div>
                                                 </div>
                                             </div>
                                         </td>

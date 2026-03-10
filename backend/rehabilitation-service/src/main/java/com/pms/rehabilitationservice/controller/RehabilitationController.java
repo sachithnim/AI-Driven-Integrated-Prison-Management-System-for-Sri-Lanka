@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/rehabilitation")
@@ -119,5 +120,84 @@ public class RehabilitationController {
                 "service", "rehabilitation-service",
                 "timestamp", java.time.LocalDateTime.now().toString()
         ));
+    }
+
+    // ── Dynamic Eligibility Assessment ──────────────────────────────────────────
+
+    @GetMapping("/eligibility/factors")
+    @Operation(summary = "Get all available eligibility factors for dynamic assessment")
+    public ResponseEntity<Map<String, Object>> getEligibilityFactors() {
+        return ResponseEntity.ok(rehabilitationService.getAvailableFactors());
+    }
+
+    @PostMapping("/eligibility/suggest-factors")
+    @Operation(summary = "AI-suggest factor values from inmate registration data")
+    public ResponseEntity<Map<String, Object>> suggestFactorValues(
+            @RequestBody Map<String, Object> inmateData) {
+        return ResponseEntity.ok(rehabilitationService.suggestFactorValues(inmateData));
+    }
+
+    @PostMapping("/eligibility/assess")
+    @Operation(summary = "Run dynamic eligibility assessment with selected factors")
+    public ResponseEntity<DynamicEligibilityResponse> assessEligibility(
+            @RequestBody DynamicEligibilityRequest request) {
+        return ResponseEntity.ok(rehabilitationService.assessDynamicEligibility(request));
+    }
+
+    // ── Post-Rehab Predictions ───────────────────────────────────────────────────
+
+    @PostMapping("/predict/all")
+    @Operation(summary = "Run all post-rehab predictions (early release, pardon, home leave)")
+    public ResponseEntity<AggregatedPredictionsResponse> getAllPredictions(
+            @RequestBody PostRehabPredictionRequest request) {
+        return ResponseEntity.ok(rehabilitationService.getAllPredictions(request));
+    }
+
+    // ── Enhanced Counseling (with AI sentiment analysis) ────────────────────────
+
+    @PostMapping("/counseling-note/analyze")
+    @Operation(summary = "Add counseling note and get AI sentiment analysis")
+    public ResponseEntity<Map<String, Object>> addCounselingNoteWithAnalysis(
+            @RequestBody Map<String, Object> request) {
+        String inmateId    = (String) request.get("inmateId");
+        String text        = (String) request.get("text");
+        String counselorId = (String) request.get("counselorId");
+        String sessionType = (String) request.get("sessionType");
+        Double sessionScore = request.containsKey("sessionScore")
+                ? ((Number) request.get("sessionScore")).doubleValue() : null;
+
+        return ResponseEntity.ok(rehabilitationService.addCounselingNoteWithAnalysis(
+                inmateId, text, sessionScore, sessionType, counselorId));
+    }
+
+    // ── Progress Dashboard ───────────────────────────────────────────────────────
+
+    @GetMapping("/progress-summary/{inmateId}")
+    @Operation(summary = "Get comprehensive rehabilitation progress summary for dashboard charts")
+    public ResponseEntity<com.pms.rehabilitationservice.dto.ProgressSummaryDTO> getProgressSummary(
+            @PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getProgressSummary(inmateId));
+    }
+
+    @GetMapping("/eligibility-history/{inmateId}")
+    @Operation(summary = "Get eligibility assessment history for an inmate")
+    public ResponseEntity<List<com.pms.rehabilitationservice.model.EligibilityAssessment>> getEligibilityHistory(
+            @PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getEligibilityHistory(inmateId));
+    }
+
+    // ── Auto Predictions (no manual form needed) ─────────────────────────────────
+
+    @GetMapping("/predictions/auto/{inmateId}")
+    @Operation(summary = "Auto-generate post-rehab predictions from stored rehabilitation profile data")
+    public ResponseEntity<AggregatedPredictionsResponse> getAutoPredictions(
+            @PathVariable String inmateId) {
+        return ResponseEntity.ok(rehabilitationService.getAutoPredictions(inmateId));
+    }
+
+    @GetMapping("/profiled-ids")
+    @Operation(summary = "Get set of inmate IDs that already have a rehabilitation profile (for batch-skip logic)")
+    public ResponseEntity<Set<String>> getProfiledInmateIds() {
+        return ResponseEntity.ok(rehabilitationService.getProfiledInmateIds());
     }
 }

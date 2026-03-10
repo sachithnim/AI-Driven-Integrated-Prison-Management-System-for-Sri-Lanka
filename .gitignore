@@ -84,3 +84,5 @@ Thumbs.db
 
 # AWS credentials
 .aws/
+
+*.jpg

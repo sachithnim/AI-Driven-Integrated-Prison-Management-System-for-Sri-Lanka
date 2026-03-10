@@ -2,6 +2,10 @@ package com.pms.rehabilitationservice.service;
 
 import com.pms.rehabilitationservice.dto.AIRecommendationRequest;
 import com.pms.rehabilitationservice.dto.AIRecommendationResponse;
+import com.pms.rehabilitationservice.dto.DynamicEligibilityRequest;
+import com.pms.rehabilitationservice.dto.DynamicEligibilityResponse;
+import com.pms.rehabilitationservice.dto.PostRehabPredictionRequest;
+import com.pms.rehabilitationservice.dto.AggregatedPredictionsResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -84,6 +88,93 @@ public class AIServiceClient {
         } catch (Exception e) {
             log.error("Error calculating early release score: {}", e.getMessage());
             return 0.0;
+        }
+    }
+
+    /**
+     * Dynamic eligibility assessment with user-selected factors
+     */
+    public DynamicEligibilityResponse assessDynamicEligibility(DynamicEligibilityRequest request) {
+        try {
+            String url = aiServiceUrl + "/api/v1/eligibility/assess";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<DynamicEligibilityRequest> entity = new HttpEntity<>(request, headers);
+            log.info("Calling dynamic eligibility for inmate: {} with {} factors",
+                    request.getInmateId(), request.getSelectedFactors() != null ? request.getSelectedFactors().size() : 0);
+            return restTemplate.postForObject(url, entity, DynamicEligibilityResponse.class);
+        } catch (Exception e) {
+            log.error("Error calling dynamic eligibility service: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Get all post-rehab predictions (early release, pardon, home leave)
+     */
+    public AggregatedPredictionsResponse getAllPredictions(PostRehabPredictionRequest request) {
+        try {
+            String url = aiServiceUrl + "/api/v1/post-rehab/all-predictions";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<PostRehabPredictionRequest> entity = new HttpEntity<>(request, headers);
+            log.info("Calling post-rehab predictions for inmate: {}", request.getInmateId());
+            return restTemplate.postForObject(url, entity, AggregatedPredictionsResponse.class);
+        } catch (Exception e) {
+            log.error("Error calling post-rehab predictions: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Analyze counseling note text
+     */
+    public java.util.Map analyzeCounselingNote(String inmateId, String text, Double sessionScore, String sessionType) {
+        try {
+            String url = aiServiceUrl + "/api/v1/progress/analyze-counseling";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("inmate_id", inmateId);
+            body.put("session_text", text);
+            if (sessionScore != null) body.put("session_score", sessionScore);
+            if (sessionType != null) body.put("session_type", sessionType);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            return restTemplate.postForObject(url, entity, java.util.Map.class);
+        } catch (Exception e) {
+            log.error("Error analyzing counseling note: {}", e.getMessage());
+            return java.util.Map.of("sentiment", "neutral", "score", 0.5);
+        }
+    }
+
+    /**
+     * Get available eligibility factors from Python service
+     */
+    public java.util.Map getAvailableFactors() {
+        try {
+            String url = aiServiceUrl + "/api/v1/eligibility/factors";
+            return restTemplate.getForObject(url, java.util.Map.class);
+        } catch (Exception e) {
+            log.error("Error fetching eligibility factors: {}", e.getMessage());
+            return java.util.Map.of();
+        }
+    }
+
+    /**
+     * Ask the AI to suggest pre-filled factor values for a given inmate based
+     * on their registration data (before a formal assessment is run).
+     */
+    public java.util.Map suggestFactorValues(java.util.Map<String, Object> inmateData) {
+        try {
+            String url = aiServiceUrl + "/api/v1/eligibility/suggest-factors";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(inmateData, headers);
+            log.info("Calling suggest-factors for inmate: {}", inmateData.get("inmate_id"));
+            return restTemplate.postForObject(url, entity, java.util.Map.class);
+        } catch (Exception e) {
+            log.error("Error calling suggest-factors: {}", e.getMessage(), e);
+            return java.util.Map.of("error", e.getMessage());
         }
     }
     

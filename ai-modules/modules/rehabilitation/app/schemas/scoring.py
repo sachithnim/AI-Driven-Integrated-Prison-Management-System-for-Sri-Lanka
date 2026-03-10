@@ -8,12 +8,25 @@ from typing import Literal, List, Optional
 
 class InitialAssessmentRequest(BaseModel):
     """Request model for initial inmate assessment"""
-    crimeDescription: str = Field(..., description="Description of the crime")
-    riskHistory: List[str] = Field(default=[], description="History of risk incidents")
-    notes: str = Field(default="", description="Additional notes")
+    crimeDescription: Optional[str] = Field(default="Not specified", description="Description of the crime")
+    riskHistory: Optional[List[str]] = Field(default=[], description="History of risk incidents")
+    notes: Optional[str] = Field(default="", description="Additional notes")
     age: Optional[int] = Field(default=30, description="Age of the inmate")
-    sentenceDurationMonths: int = Field(..., description="Sentence duration in months")
-    caseType: str = Field(..., description="Type of case")
+    sentenceDurationMonths: Optional[int] = Field(default=12, description="Sentence duration in months")
+    caseType: Optional[str] = Field(default="OTHER", description="Type of case")
+
+    def __init__(self, **data):
+        if data.get("crimeDescription") is None:
+            data["crimeDescription"] = "Not specified"
+        if data.get("notes") is None:
+            data["notes"] = ""
+        if data.get("riskHistory") is None:
+            data["riskHistory"] = []
+        if data.get("caseType") is None:
+            data["caseType"] = "OTHER"
+        if data.get("sentenceDurationMonths") is None:
+            data["sentenceDurationMonths"] = 12
+        super().__init__(**data)
 
 
 class InitialAssessmentResponse(BaseModel):

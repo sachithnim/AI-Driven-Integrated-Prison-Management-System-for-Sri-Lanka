@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.logging import logger
 from api import health, recommendation, analysis, scoring, data, upload, predictions
+from api import enhanced_eligibility, progress_tracker, post_rehab_predictions
 
 
 def create_app() -> FastAPI:
@@ -67,6 +68,21 @@ def create_app() -> FastAPI:
     # New: AI prediction endpoints
     app.include_router(
         predictions.router,
+        prefix=settings.API_V1_PREFIX
+    )
+    # New: Dynamic eligibility assessment
+    app.include_router(
+        enhanced_eligibility.router,
+        prefix=settings.API_V1_PREFIX
+    )
+    # New: Progress tracker (counseling, OCR, activities)
+    app.include_router(
+        progress_tracker.router,
+        prefix=settings.API_V1_PREFIX
+    )
+    # New: Post-rehab predictions (early release, pardon, home leave)
+    app.include_router(
+        post_rehab_predictions.router,
         prefix=settings.API_V1_PREFIX
     )
     

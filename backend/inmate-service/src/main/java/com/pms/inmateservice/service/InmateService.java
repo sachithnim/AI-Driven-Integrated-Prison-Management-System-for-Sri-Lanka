@@ -45,17 +45,17 @@ public class InmateService {
         // Call AI Service for Initial Assessment
         try {
             Map<String, Object> aiRequest = new HashMap<>();
-            aiRequest.put("crimeDescription", requestDTO.getCrimeDescription());
-            aiRequest.put("riskHistory", requestDTO.getRiskHistory());
-            aiRequest.put("notes", requestDTO.getNotes());
+            aiRequest.put("crimeDescription", requestDTO.getCrimeDescription() != null ? requestDTO.getCrimeDescription() : "Not specified");
+            aiRequest.put("riskHistory", requestDTO.getRiskHistory() != null ? requestDTO.getRiskHistory() : new String[0]);
+            aiRequest.put("notes", requestDTO.getNotes() != null ? requestDTO.getNotes() : "");
             // Calculate age if not provided or calculate from DOB
             int age = 30;
             if (requestDTO.getDateOfBirth() != null) {
                 age = java.time.Period.between(requestDTO.getDateOfBirth(), LocalDate.now()).getYears();
             }
             aiRequest.put("age", age);
-            aiRequest.put("sentenceDurationMonths", requestDTO.getSentenceDurationMonths());
-            aiRequest.put("caseType", requestDTO.getCaseType().toString());
+            aiRequest.put("sentenceDurationMonths", requestDTO.getSentenceDurationMonths() != null ? requestDTO.getSentenceDurationMonths() : 12);
+            aiRequest.put("caseType", requestDTO.getCaseType() != null ? requestDTO.getCaseType().toString() : "OTHER");
 
             Map response = webClientBuilder.build()
                     .post()

@@ -27,10 +27,34 @@ public class RehabProfile {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> profileFeatures;
-    
+
+    /**
+     * AI-computed eligibility factor values (0-1 scale).
+     * Keys mirror the AI service's factor registry.
+     * Updated automatically after each counseling note and progress log.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Double> factorValues;
+
     private String suitabilityGroup; // e.g., drug_rehab, PTSD, vocational
     
     private Double riskScore;
+
+    /** Running average of counseling session scores (0-10) */
+    private Double avgCounselingScore;
+
+    /** Latest progress percentage from the most recent ProgressLog */
+    private Integer latestProgressPercentage;
+
+    /** Latest eligibility score (0-1) from the most recent assessment */
+    private Double latestEligibilityScore;
+
+    /** Total counseling sessions recorded */
+    private Integer totalCounselingSessions;
+
+    /** Total progress logs recorded */
+    private Integer totalProgressLogs;
     
     private String mentalHealthStatus;
     

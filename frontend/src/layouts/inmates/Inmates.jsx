@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Eye, Edit, Trash2, X, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import InmateService from '../../services/inmate/inmateService';
 import toast from 'react-hot-toast';
 
 export default function Inmates() {
+    const navigate = useNavigate();
     const [inmates, setInmates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +159,7 @@ export default function Inmates() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button className="text-blue-600 hover:text-blue-900 mr-3"><Eye className="w-4 h-4" /></button>
+                                        <button onClick={() => navigate(`/inmates/${inmate.id}`)} className="text-blue-600 hover:text-blue-900 mr-3"><Eye className="w-4 h-4" /></button>
                                         <button className="text-indigo-600 hover:text-indigo-900 mr-3"><Edit className="w-4 h-4" /></button>
                                     </td>
                                 </tr>

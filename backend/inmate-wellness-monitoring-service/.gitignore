@@ -1,0 +1,26 @@
+AI/Training/Emotion_Voice_Datasets/
+AI/Training/fer2013plus/
+AI/Training/Part2/wav2vec2_emotion/
+AI/Training/runs/
+AI/prison_health_api/chroma_db/
+AI/prison_health_api/uploads/
+AI/prison_health_api/instance/
+AI/Training/2000_per_class_256x256_Grayscale_split/
+
+
+
+# Ignore environment variable files
+*.env
+*venv/
+*.zip
+__pycache__/
+*.pyc
+
+*.pdf
+*.db
+*.pt
+*.sqlite3
+*.pth
+*.safetensors
+*.bin
+*.jpg
