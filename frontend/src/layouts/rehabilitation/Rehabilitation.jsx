@@ -164,6 +164,7 @@ export default function Rehabilitation() {
   const [generatingFactors, setGeneratingFactors] = useState(false);
   const [allInmates, setAllInmates] = useState([]);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [selectedPrisonType, setSelectedPrisonType] = useState("");
 
   useEffect(() => {
     InmateService.getAllInmates().then(setAllInmates).catch(console.error);
@@ -326,6 +327,9 @@ export default function Rehabilitation() {
     try {
       setCreatingProfile(inmate.id);
       const aiRequest = mapInmateToAIRequest(inmate);
+      if (selectedPrisonType) {
+        aiRequest.prison_type = selectedPrisonType;
+      }
       await BackendRehabService.createRehabProfile(inmate.id.toString(), aiRequest);
       alert(`Rehabilitation profile created successfully for ${inmate.firstName} ${inmate.lastName}`);
     } catch (err) {
@@ -617,7 +621,25 @@ export default function Rehabilitation() {
                 <ReasoningDisplay reasoning={dynamicResult.reasoning} />
 
                 {dynamicResult.eligible && (
-                  <div className="mt-4 pt-4 border-t border-green-200">
+                  <div className="mt-4 pt-4 border-t border-green-200 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Target Prison Type (for program recommendations)
+                      </label>
+                      <select
+                        value={selectedPrisonType}
+                        onChange={(e) => setSelectedPrisonType(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- All Programs (No Filter) --</option>
+                        <option value="WORK_CAMP">Work Camp</option>
+                        <option value="OPEN_PRISON_CAMP">Open Prison Camp</option>
+                        <option value="TRAINING_SCHOOL">Training School</option>
+                        <option value="CORRECTIONAL_CENTRE">Correctional Centre</option>
+                        <option value="CLOSED_PRISON">Closed Prison</option>
+                        <option value="REMAND_PRISON">Remand Prison</option>
+                      </select>
+                    </div>
                     <button
                       onClick={() => handleCreateProfile(
                         allInmates.find((i) => String(i.id) === String(dynamicInmateId)) || { id: dynamicInmateId }
@@ -628,7 +650,7 @@ export default function Rehabilitation() {
                       {String(creatingProfile) === String(dynamicInmateId) ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Creating Profile…</>
                       ) : (
-                        <><FilePlus className="w-4 h-4" />Create Rehab Profile</>
+                        <><FilePlus className="w-4 h-4" />Create Rehab Profile & Get Recommendations</>
                       )}
                     </button>
                   </div>

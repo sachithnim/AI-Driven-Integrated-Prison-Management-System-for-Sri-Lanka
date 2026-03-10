@@ -276,18 +276,40 @@ function CounselingTab() {
 }
 
 function ProgressTab() {
-  const [inmateId, setInmateId] = useState("");
+  const [inmates, setInmates] = useState([]);
+  const [selectedInmate, setSelectedInmate] = useState("");
+  const [recommendations, setRecommendations] = useState([]);
   const [recommendationId, setRecommendationId] = useState("");
-  const [status, setStatus] = useState("IN_PROGRESS");
+  const [status, setStatus] = useState("SATISFACTORY");
   const [percentage, setPercentage] = useState("");
   const [notes, setNotes] = useState("");
   const [recordedBy, setRecordedBy] = useState("");
+  const [activityType, setActivityType] = useState("program_activity");
+  const [participationScore, setParticipationScore] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    InmateService.getAllInmates().then(setInmates).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (selectedInmate) {
+      BackendRehabService.getRecommendations(selectedInmate)
+        .then((recs) => {
+          setRecommendations(recs || []);
+          if (recs?.length > 0) setRecommendationId(recs[0].id?.toString() || "");
+        })
+        .catch(() => setRecommendations([]));
+    } else {
+      setRecommendations([]);
+      setRecommendationId("");
+    }
+  }, [selectedInmate]);
+
   const handleSubmit = async () => {
-    if (!recommendationId.trim()) {
-      alert("Recommendation ID is required.");
+    if (!recommendationId) {
+      alert("Please select an inmate and recommendation.");
       return;
     }
     try {
@@ -297,12 +319,13 @@ function ProgressTab() {
         recommendationId: parseInt(recommendationId),
         status,
         progressPercentage: percentage !== "" ? parseInt(percentage) : undefined,
-        notes,
+        notes: `[${activityType}]${participationScore ? ` [participation:${participationScore}/10]` : ""} ${notes}`,
         recordedBy,
       });
       setSuccess(true);
       setNotes("");
       setPercentage("");
+      setParticipationScore("");
     } catch (err) {
       console.error(err);
       alert("Failed to log progress.");
@@ -322,19 +345,61 @@ function ProgressTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Recommendation ID <span className="text-red-500">*</span>
+            Select Inmate <span className="text-red-500">*</span>
           </label>
-          <input
-            type="number"
+          <select
+            value={selectedInmate}
+            onChange={(e) => setSelectedInmate(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- Select Inmate --</option>
+            {inmates.map((inmate) => (
+              <option key={inmate.id} value={inmate.id?.toString()}>
+                {inmate.id} — {inmate.firstName} {inmate.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Recommendation / Program <span className="text-red-500">*</span>
+          </label>
+          <select
             value={recommendationId}
             onChange={(e) => setRecommendationId(e.target.value)}
-            placeholder="e.g. 42"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
+            <option value="">-- Select --</option>
+            {recommendations.map((r) => (
+              <option key={r.id} value={r.id}>
+                #{r.id} — {r.program?.name || r.program?.type || "Program"}
+              </option>
+            ))}
+          </select>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+          <select
+            value={activityType}
+            onChange={(e) => setActivityType(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="program_activity">Program Activity</option>
+            <option value="vocational_training">Vocational Training (NVQ)</option>
+            <option value="counseling_session">Counseling Session</option>
+            <option value="meditation">Meditation / Mindfulness</option>
+            <option value="cultural_program">Cultural Program</option>
+            <option value="education">Education Class</option>
+            <option value="physical_activity">Physical Activity</option>
+            <option value="community_service">Community Service</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select
@@ -342,17 +407,15 @@ function ProgressTab() {
             onChange={(e) => setStatus(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="NOT_STARTED">Not Started</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="ON_HOLD">On Hold</option>
-            <option value="DROPPED">Dropped</option>
+            <option value="EXCELLENT">Excellent</option>
+            <option value="GOOD">Good</option>
+            <option value="SATISFACTORY">Satisfactory</option>
+            <option value="NEEDS_IMPROVEMENT">Needs Improvement</option>
+            <option value="POOR">Poor</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Progress %
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Progress %</label>
           <input
             type="number"
             min={0}
@@ -364,9 +427,20 @@ function ProgressTab() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Recorded By
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Participation (0-10)</label>
+          <input
+            type="number"
+            min={0}
+            max={10}
+            step={0.5}
+            value={participationScore}
+            onChange={(e) => setParticipationScore(e.target.value)}
+            placeholder="e.g. 8"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Recorded By</label>
           <input
             type="text"
             value={recordedBy}
@@ -383,7 +457,7 @@ function ProgressTab() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          placeholder="Session observations, milestones reached…"
+          placeholder="Session observations, milestones reached, inmate engagement level…"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>

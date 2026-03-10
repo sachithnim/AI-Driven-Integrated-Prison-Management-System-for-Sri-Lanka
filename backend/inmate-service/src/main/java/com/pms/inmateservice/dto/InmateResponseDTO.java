@@ -1,6 +1,7 @@
 package com.pms.inmateservice.dto;
 
 import com.pms.inmateservice.model.CaseType;
+import com.pms.inmateservice.model.ConvictionStatus;
 import com.pms.inmateservice.model.InmateStatus;
 import com.pms.inmateservice.model.SecurityLevel;
 import lombok.Data;
@@ -21,6 +22,15 @@ public class InmateResponseDTO {
     private String gender;
     private String nationality;
     private String nic;
+    private String religion;
+    private String maritalStatus;
+    private String literacyLevel;
+    private Integer previousConvictions;
+    private String previousPunishments;
+    private String incomeLevel;
+    private String addictions;
+    private String occupation;
+    private ConvictionStatus convictionStatus;
     private String address;
     private String contactNumber;
 

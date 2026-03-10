@@ -1,6 +1,7 @@
 package com.pms.inmateservice.dto;
 
 import com.pms.inmateservice.model.CaseType;
+import com.pms.inmateservice.model.ConvictionStatus;
 import com.pms.inmateservice.model.InmateStatus;
 import com.pms.inmateservice.model.SecurityLevel;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,17 @@ public class InmateRequestDTO {
     private String nic;
     private String address;
     private String contactNumber;
+
+    // Demographic & Background Information (for AI assessment)
+    private String religion;
+    private String maritalStatus;
+    private String literacyLevel;
+    private Integer previousConvictions;
+    private String previousPunishments;
+    private String incomeLevel;
+    private String addictions;
+    private String occupation;
+    private ConvictionStatus convictionStatus;
 
     // Case Information
     @NotNull(message = "Case type is required")

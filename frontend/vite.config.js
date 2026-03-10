@@ -6,44 +6,76 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),   // Self-signed HTTPS cert — required for GPS on phone
+    basicSsl(),   // Self-signed HTTPS — required for GPS geolocation on phone
   ],
   server: {
-    host: '0.0.0.0',   // Allow access from phone on same WiFi
+    host: '0.0.0.0',
     port: 5173,
-    https: true,        // Enable HTTPS
+    https: true,
     proxy: {
-      // API Gateway (auth, inmates via /api/*, rehabilitation via /api/rehabilitation/*)
-      '/api': { target: 'http://localhost:4004', changeOrigin: true, secure: false },
-      '/auth': { target: 'http://localhost:4004', changeOrigin: true, secure: false },
-
-      // Direct inmate-service paths (used by inmateService, prisonService, cellService)
-      // bypass: page refreshes on React routes (/inmates/:id etc.) serve index.html instead
-      '/inmates':  { target: 'http://localhost:4007', changeOrigin: true, secure: false, bypass: (req) => { if (req.headers.accept?.includes('text/html')) return '/index.html'; } },
-      '/prisons':  { target: 'http://localhost:4007', changeOrigin: true, secure: false, bypass: (req) => { if (req.headers.accept?.includes('text/html')) return '/index.html'; } },
-      '/cells':    { target: 'http://localhost:4007', changeOrigin: true, secure: false, bypass: (req) => { if (req.headers.accept?.includes('text/html')) return '/index.html'; } },
-
-      // Direct rehabilitation-service paths (used by backendRehabService)
-      // bypass: React routes under /rehabilitation/* serve index.html on page refresh
-      '/rehabilitation': { target: 'http://localhost:4006', changeOrigin: true, secure: false, bypass: (req) => { if (req.headers.accept?.includes('text/html')) return '/index.html'; } },
-
-      // home-leave is only a React route — always serve index.html
-      '/home-leave': { target: 'http://localhost:4006', changeOrigin: true, secure: false, bypass: () => '/index.html' },
-
-      // AI rehab module (port 8001) — prefix stripped on the way through
+      // ── Auth via API Gateway (4004) ───────────────────────────────────────
+      '/auth': {
+        target: 'http://localhost:4004',
+        changeOrigin: true,
+        secure: false,
+      },
+      // ── Inmate + Cell + Prison via API Gateway (4004) ─────────────────────
+      '/api/inmates': {
+        target: 'http://localhost:4004',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/prisons': {
+        target: 'http://localhost:4004',
+        changeOrigin: true,
+        secure: false,
+      },
+      // ── Direct inmate-service (4007) for services that call directly ───────
+      '/inmates': {
+        target: 'http://localhost:4007',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/cells': {
+        target: 'http://localhost:4007',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/prisons': {
+        target: 'http://localhost:4007',
+        changeOrigin: true,
+        secure: false,
+      },
+      // ── Rehabilitation Service (4006) ─────────────────────────────────────
+      '/rehabilitation': {
+        target: 'http://localhost:4006',
+        changeOrigin: true,
+        secure: false,
+        bypass(req) {
+          // Browser page navigations → serve the React SPA (React Router handles it)
+          if (req.headers.accept?.includes('text/html')) {
+            return req.url;
+          }
+        },
+      },
+      // ── Rehabilitation AI (8001) via /ai-api prefix ───────────────────────
       '/ai-api': {
         target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/ai-api/, ''),
       },
-
-      // Violation service WebSocket + REST (port 8003) — prefix stripped on the way through
-      '/violation-ws': {
-        target: 'ws://localhost:8003',
-        ws: true,
+      // ── Rehabilitation AI (8001) via /api/v1 direct ───────────────────────
+      '/api/v1': {
+        target: 'http://localhost:8001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/violation-ws/, ''),
+        secure: false,
+      },
+      // ── Overcrowding AI (8002) ────────────────────────────────────────────
+      '/overcrowding': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

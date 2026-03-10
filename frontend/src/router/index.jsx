@@ -93,6 +93,10 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: "/prisons",
+        element: <Prisons />
+      },
+      {
         path: "/cells",
         element: <Cells />,
       },
@@ -119,10 +123,7 @@ export const router = createBrowserRouter([
         path: "/gps-reporter",
         element: <GPSReporter />
     },
-    {
-      path: "/prisons",
-      element: <Prisons />
-    },
+    
 ]);
 //             {
 //                 index: true,

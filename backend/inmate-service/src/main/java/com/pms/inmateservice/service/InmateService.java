@@ -263,6 +263,17 @@ public class InmateService {
         inmate.setNic(dto.getNic());
         inmate.setContactNumber(dto.getContactNumber());
         
+        // Demographic & Background fields
+        inmate.setReligion(dto.getReligion());
+        inmate.setMaritalStatus(dto.getMaritalStatus());
+        inmate.setLiteracyLevel(dto.getLiteracyLevel());
+        inmate.setPreviousConvictions(dto.getPreviousConvictions());
+        inmate.setPreviousPunishments(dto.getPreviousPunishments());
+        inmate.setIncomeLevel(dto.getIncomeLevel());
+        inmate.setAddictions(dto.getAddictions());
+        inmate.setOccupation(dto.getOccupation());
+        inmate.setConvictionStatus(dto.getConvictionStatus() != null ? dto.getConvictionStatus() : com.pms.inmateservice.model.ConvictionStatus.UNCONVICTED);
+        
         inmate.setCaseType(dto.getCaseType());
         inmate.setCaseNumber(dto.getCaseNumber());
         inmate.setSentenceStartDate(dto.getSentenceStartDate());
@@ -329,6 +340,7 @@ public class InmateService {
         dto.setAge(inmate.getAge());
         dto.setGender(inmate.getGender());
         dto.setNationality(inmate.getNationality());
+        dto.setNic(inmate.getNic());
         dto.setAddress(inmate.getAddress());
         dto.setContactNumber(inmate.getContactNumber());
         
@@ -380,6 +392,17 @@ public class InmateService {
         dto.setCreatedBy(inmate.getCreatedBy());
         dto.setUpdatedBy(inmate.getUpdatedBy());
         dto.setNotes(inmate.getNotes());
+
+        // Demographics
+        dto.setReligion(inmate.getReligion());
+        dto.setMaritalStatus(inmate.getMaritalStatus());
+        dto.setLiteracyLevel(inmate.getLiteracyLevel());
+        dto.setPreviousConvictions(inmate.getPreviousConvictions());
+        dto.setPreviousPunishments(inmate.getPreviousPunishments());
+        dto.setIncomeLevel(inmate.getIncomeLevel());
+        dto.setAddictions(inmate.getAddictions());
+        dto.setOccupation(inmate.getOccupation());
+        dto.setConvictionStatus(inmate.getConvictionStatus());
         
         // AI Scores
         dto.setBehaviorScore(inmate.getBehaviorScore());
