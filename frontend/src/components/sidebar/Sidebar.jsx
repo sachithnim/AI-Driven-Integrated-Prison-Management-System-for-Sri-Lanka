@@ -24,6 +24,8 @@ import {
   Home,
   FolderOpen,
   History,
+  HeartPulse,
+  Activity,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -75,10 +77,10 @@ const sidebarItems = [
       },
       {
         name: "Wellness Monitoring",
-        icon: CameraIcon,
+        icon: HeartPulse,
         subItems: [
-          { name: "Survey", path: "/survey", icon: CameraIcon },
-          { name: "Inmates History", path: "/survey/history", icon: History },
+          { name: "Survey", path: "/survey", icon: Activity },
+          { name: "Inmates Wellness History", path: "/survey/history", icon: History },
           {
             name: "Common Docs",
             path: "/survey/common-docs",

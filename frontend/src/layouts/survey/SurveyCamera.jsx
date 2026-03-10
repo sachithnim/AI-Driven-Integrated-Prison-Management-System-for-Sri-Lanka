@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Camera as CameraIcon,
+  HeartPulse,
   Loader,
   AlertCircle,
   Play,
@@ -373,9 +374,9 @@ export default function SurveyCamera() {
         <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200/60">
           <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-4">
             <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg shadow-blue-500/30">
-                <CameraIcon className="w-8 h-8 text-white drop-shadow-md" />
+                <HeartPulse className="w-8 h-8 text-white drop-shadow-md" />
             </div>
-            Diagnostic Pipeline
+            Wellness Assessment
           </h1>
 
           {/* Survey Guidelines */}
@@ -386,11 +387,11 @@ export default function SurveyCamera() {
             <div>
               <h3 className="font-bold text-slate-800 mb-2">Assessment Guidelines</h3>
               <ol className="list-decimal list-inside text-sm text-slate-600 space-y-1 font-medium">
-                <li><span className="text-slate-700">Register inmate</span></li>
+                <li><span className="text-slate-700">Enroll inmate for wellness assessment</span></li>
                 <li><span className="text-slate-700">Take a photo and analyze</span></li>
                 <li><span className="text-slate-700">Upload prescriptions if have</span></li>
                 <li><span className="text-slate-700">Upload medical reports if have</span></li>
-                <li><span className="text-slate-700">Speak in English while picking an answer and speaking the answer at the same time</span></li>
+                <li><span className="text-slate-700">Speak while picking an answer and speaking the answer at the same time</span></li>
                 <li><span className="text-slate-700">Analyze to get the report</span></li>
               </ol>
             </div>
@@ -431,14 +432,14 @@ export default function SurveyCamera() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 space-y-6">
               <h2 className="text-xl font-bold flex items-center gap-3 tracking-wide text-slate-800">
-                <User className="text-blue-600 w-6 h-6" /> Subject Registration
+                <User className="text-blue-600 w-6 h-6" /> Inmate Wellness Enrollment
               </h2>
               <Input
                 label="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={(e) => handleLookup("name", e.target.value)}
-                placeholder="e.g. JohnDoe"
+                placeholder="Username"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -446,28 +447,28 @@ export default function SurveyCamera() {
                   type="number"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  placeholder="e.g. 30"
+                  placeholder="30"
                 />
                 <Input
                   label="NIC Number"
                   value={nic}
                   onChange={(e) => setNic(e.target.value)}
                   onBlur={(e) => handleLookup("nic", e.target.value)}
-                  placeholder="e.g. 123456789V"
+                  placeholder="123456789V"
                 />
               </div>
               <Input
                 label="Home Address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. 123 Main St"
+                placeholder="123 Main St"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Phone Number"
                   value={telNo}
                   onChange={(e) => setTelNo(e.target.value)}
-                  placeholder="e.g. +1 555-0100"
+                  placeholder="0771234567"
                 />
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -514,19 +515,19 @@ export default function SurveyCamera() {
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <div className="relative bg-black rounded-lg aspect-video flex items-center justify-center overflow-hidden mb-4">
+              <div className="relative bg-slate-950 rounded-lg h-[450px] flex items-center justify-center overflow-hidden mb-4">
                 {!isCameraActive && (
                   <Button
                     onClick={startCamera}
                     variant="outline"
-                    className="text-white border-white hover:bg-white hover:text-black"
+                    className="text-white border-white z-10 hover:bg-white hover:text-black"
                   >
                     <Play className="w-4 h-4 mr-2" /> Start Camera
                   </Button>
                 )}
                 <video
                   ref={localVideoRef}
-                  className={`w-full h-full object-cover ${!isCameraActive ? "hidden" : ""}`}
+                  className={`absolute inset-0 w-full h-full object-cover ${!isCameraActive ? "hidden" : ""}`}
                   autoPlay
                   muted
                   playsInline
@@ -634,6 +635,17 @@ export default function SurveyCamera() {
                     className="text-sm w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                   />
                 </div>
+                
+                {pdfFile && (
+                  <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl p-3 flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-indigo-900 truncate">{pdfFile.name}</p>
+                      <p className="text-xs text-indigo-600">Ready to upload</p>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   variant="secondary"
                   onClick={handlePdfUpload}
@@ -800,7 +812,7 @@ export default function SurveyCamera() {
                   </div>
                   <div>
                     <h2 className="text-3xl font-extrabold text-slate-900">
-                      Final Diagnostic Report
+                      Final Health Report
                     </h2>
                     <p className="text-slate-500">
                       Generated for {username} ({age} yrs, {detectedGender})
@@ -863,7 +875,7 @@ export default function SurveyCamera() {
                     <div>
                       <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>{" "}
-                        AI Reasoning
+                        Health Analysis
                       </h3>
                       <p className="text-slate-600 leading-relaxed bg-blue-50/50 p-5 rounded-xl border border-blue-100">
                         {analysisData.analysis.reasoning}

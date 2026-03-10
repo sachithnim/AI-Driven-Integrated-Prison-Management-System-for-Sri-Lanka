@@ -115,7 +115,7 @@ export default function Inmates() {
                 {/* Final AI Generated Report */}
                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-                        <BarChart3 className="w-5 h-5 text-indigo-500"/> Retrospective AI Health Timelines
+                        <BarChart3 className="w-5 h-5 text-indigo-500"/> Retrospective Health Timelines
                     </h3>
 
                     {historyData.reports && historyData.reports.length > 0 ? (
@@ -160,7 +160,7 @@ export default function Inmates() {
                                         </div>
                                         
                                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            <p className="text-xs font-semibold text-slate-500 tracking-wider uppercase mb-2">AI Reasoning</p>
+                                            <p className="text-xs font-semibold text-slate-500 tracking-wider uppercase mb-2">Health Analysis</p>
                                             <p className="text-slate-600 text-xs leading-relaxed">
                                                 {reportItem.reasoning || "No reasoning provided."}
                                             </p>
