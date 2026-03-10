@@ -4,7 +4,7 @@ import collections
 import os
 import numpy as np
 
-# 1. Define the Mapping for best_new.pt
+# 1. Define the Mapping for face_emotion_classify.pt
 EMOTION_CLASS_NAMES = ['Angry', 'Boring', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Stress', 'Suprise']
 
 # Load Models

@@ -80,7 +80,7 @@ export default function CCTVGrid() {
 
   const startAiDetection = async () => {
     if (!cameras || cameras.length === 0) {
-      alert("No cameras configured to run AI against.");
+      alert("No cameras configured to run against.");
       return;
     }
 
@@ -129,7 +129,7 @@ export default function CCTVGrid() {
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        console.log("WebSocket Connected. Starting AI stream processing...");
+        console.log("WebSocket Connected. Starting stream processing...");
         setIsAiActive(true);
         setIsConnecting(false);
         startProcessing(stream, ws);
@@ -152,7 +152,7 @@ export default function CCTVGrid() {
 
       wsRef.current = ws;
     } catch (err) {
-      console.error("Error connecting to AI backend:", err);
+      console.error("Error connecting to backend:", err);
       setIsConnecting(false);
     }
   };
@@ -268,10 +268,10 @@ export default function CCTVGrid() {
               className={isAiActive ? "animate-pulse delay-75" : ""}
             />
             {isConnecting
-              ? "Connecting AI..."
+              ? "Connecting ..."
               : isAiActive
-                ? "Stop AI Detection"
-                : "Enable AI Detection"}
+                ? "Stop Detection"
+                : "Enable Detection"}
           </button>
 
           <div className="hidden sm:flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium shadow-sm">
@@ -375,7 +375,7 @@ export default function CCTVGrid() {
                         {isAiActive && isCamOn && (
                           <div className="bg-red-600 backdrop-blur-md px-2 py-1 rounded border border-red-500 text-[10px] font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5 animate-pulse shadow-sm">
                             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>{" "}
-                            AI ACTIVE
+                            ACTIVE
                           </div>
                         )}
                       </div>
@@ -422,7 +422,7 @@ export default function CCTVGrid() {
             <div className="bg-red-50 border-b border-red-100 p-4 shrink-0 flex items-center justify-between">
               <h3 className="text-red-600 font-bold flex items-center gap-2">
                 <ShieldAlert size={18} />
-                Live AI Alerts
+                Live Alerts
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
