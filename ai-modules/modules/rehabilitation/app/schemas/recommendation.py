@@ -7,19 +7,45 @@ from typing import List, Dict, Any, Optional
 
 
 class RecommendationRequest(BaseModel):
-    """Request model for program recommendations"""
+    """Request model for program recommendations — accepts full inmate context"""
     inmateId: str = Field(..., description="Unique identifier for the inmate")
     profileFeatures: Dict[str, Any] = Field(default_factory=dict, description="Inmate profile features")
     suitabilityGroup: Optional[str] = Field("general", description="Suitability group classification")
     riskScore: Optional[float] = Field(0.5, ge=0.0, le=1.0, description="Risk score (0-1)")
-    
+
+    # ── Extended inmate context (used by RAG + LLM) ──────────────────────────
+    age: Optional[int] = Field(None, description="Inmate's age")
+    gender: Optional[str] = Field(None, description="Gender")
+    caseType: Optional[str] = Field(None, description="Crime case type enum")
+    crimeDescription: Optional[str] = Field(None, description="Free text crime description")
+    securityLevel: Optional[str] = Field(None, description="MINIMUM | LOW | MEDIUM | HIGH | MAXIMUM")
+    sentenceLengthMonths: Optional[int] = Field(None, description="Total sentence in months")
+    timeServedMonths: Optional[int] = Field(None, description="Time already served in months")
+    behaviorScore: Optional[float] = Field(None, description="Behavior score 0-100")
+    disciplineScore: Optional[float] = Field(None, description="Discipline score 0-100")
+    medicalConditions: Optional[List[str]] = Field(None, description="List of medical conditions")
+    hasSubstanceAbuse: Optional[bool] = Field(None, description="Substance abuse flag")
+    hasMentalHealthIssues: Optional[bool] = Field(None, description="Mental health flag")
+    educationLevel: Optional[str] = Field(None, description="Literacy level / education")
+    occupation: Optional[str] = Field(None, description="Previous occupation")
+    religion: Optional[str] = Field(None, description="Religion")
+    previousConvictions: Optional[int] = Field(None, description="Number of prior convictions")
+    violentHistory: Optional[bool] = Field(None, description="History of violence")
+    familySupport: Optional[float] = Field(None, description="Family support score 0-1")
+    addictions: Optional[str] = Field(None, description="Addictions info")
+    prisonType: Optional[str] = Field(None, description="Target prison type: WORK_CAMP | OPEN_PRISON_CAMP | TRAINING_SCHOOL | CORRECTIONAL_CENTRE")
+
     class Config:
         json_schema_extra = {
             "example": {
                 "inmateId": "INM001",
                 "profileFeatures": {"age": 35, "education": "high_school"},
                 "suitabilityGroup": "substance_abuse",
-                "riskScore": 0.75
+                "riskScore": 0.75,
+                "age": 22,
+                "caseType": "D_NARCOTIC_DRUGS",
+                "educationLevel": "GCE O/L",
+                "prisonType": "TRAINING_SCHOOL"
             }
         }
 

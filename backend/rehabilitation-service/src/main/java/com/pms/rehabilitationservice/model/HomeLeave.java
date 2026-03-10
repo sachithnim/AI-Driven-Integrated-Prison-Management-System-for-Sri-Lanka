@@ -45,6 +45,11 @@ public class HomeLeave {
 
     private Boolean gpsRequired = true;
 
+    // Geofence boundary settings
+    private Double geofenceCenterLat;
+    private Double geofenceCenterLng;
+    private Double geofenceRadiusMeters; // allowed radius in meters
+
     // Last known GPS position (updated via GPS endpoint)
     private Double lastKnownLat;
 

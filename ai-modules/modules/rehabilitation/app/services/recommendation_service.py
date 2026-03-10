@@ -23,7 +23,7 @@ from utils.model_utils import model_manager
 class RecommendationService:
     """Service for generating rehabilitation program recommendations using ML models"""
     
-    # Program database with characteristics
+    # Program database with characteristics — includes Sri Lankan specific programs
     PROGRAM_DATABASE = {
         "substance_abuse_intensive": {
             "name": "Intensive Drug Rehabilitation Program",
@@ -80,7 +80,80 @@ class RecommendationService:
             "base_score": 0.70,
             "suited_for": ["general", "mental_health"],
             "description": "Family-focused rehabilitation and reintegration support"
-        }
+        },
+        # ── Sri Lankan Specific Programs ──────────────────────────────────────
+        "nvq_carpentry": {
+            "name": "NVQ Level 3 – Carpentry & Furniture Making",
+            "duration_weeks": 16,
+            "base_score": 0.76,
+            "suited_for": ["general", "educational_deficit"],
+            "description": "TVEC-certified carpentry training with workshop practice",
+            "prison_types": ["WORK_CAMP", "OPEN_PRISON_CAMP", "CORRECTIONAL_CENTRE"]
+        },
+        "nvq_masonry": {
+            "name": "NVQ Level 3 – Masonry & Construction",
+            "duration_weeks": 14,
+            "base_score": 0.74,
+            "suited_for": ["general", "educational_deficit"],
+            "description": "TVEC-certified masonry training for construction industry",
+            "prison_types": ["WORK_CAMP", "OPEN_PRISON_CAMP"]
+        },
+        "nvq_ac_repair": {
+            "name": "NVQ Level 4 – AC & Refrigeration Repair",
+            "duration_weeks": 16,
+            "base_score": 0.73,
+            "suited_for": ["general", "educational_deficit"],
+            "description": "Advanced technical training in air-conditioning repair",
+            "prison_types": ["WORK_CAMP", "OPEN_PRISON_CAMP", "CORRECTIONAL_CENTRE"]
+        },
+        "agriculture_training": {
+            "name": "Agriculture & Organic Farming Program",
+            "duration_weeks": 12,
+            "base_score": 0.71,
+            "suited_for": ["general", "educational_deficit"],
+            "description": "Hands-on agriculture and organic farming at open-camp farms",
+            "prison_types": ["OPEN_PRISON_CAMP", "WORK_CAMP"]
+        },
+        "bhavana_meditation": {
+            "name": "Bhavana Meditation & Mindfulness Program",
+            "duration_weeks": 8,
+            "base_score": 0.80,
+            "suited_for": ["mental_health", "behavioral", "general"],
+            "description": "Buddhist mindfulness meditation for emotional regulation",
+            "prison_types": ["TRAINING_SCHOOL", "CORRECTIONAL_CENTRE", "OPEN_PRISON_CAMP"]
+        },
+        "kandyan_arts": {
+            "name": "Kandyan Dancing & Traditional Drumming",
+            "duration_weeks": 10,
+            "base_score": 0.69,
+            "suited_for": ["general", "mental_health"],
+            "description": "Traditional Sri Lankan performing arts for cultural rehabilitation",
+            "prison_types": ["TRAINING_SCHOOL", "CORRECTIONAL_CENTRE"]
+        },
+        "art_therapy": {
+            "name": "Art Therapy & Creative Expression",
+            "duration_weeks": 8,
+            "base_score": 0.77,
+            "suited_for": ["mental_health", "general"],
+            "description": "Guided art therapy sessions for emotional processing",
+            "prison_types": ["TRAINING_SCHOOL", "CORRECTIONAL_CENTRE"]
+        },
+        "youth_leadership": {
+            "name": "Youth Leadership & Life Skills",
+            "duration_weeks": 12,
+            "base_score": 0.80,
+            "suited_for": ["general", "educational_deficit", "behavioral"],
+            "description": "Structured leadership and social-skills program for young offenders",
+            "prison_types": ["TRAINING_SCHOOL"]
+        },
+        "drug_rehab_tier1": {
+            "name": "Drug Rehabilitation – Tier 1 (Detox & Stabilise)",
+            "duration_weeks": 4,
+            "base_score": 0.90,
+            "suited_for": ["substance_abuse"],
+            "description": "Medical detox and initial stabilisation under MO supervision",
+            "prison_types": ["REMAND_PRISON", "CLOSED_PRISON", "CORRECTIONAL_CENTRE"]
+        },
     }
     
     def __init__(self):
@@ -112,28 +185,26 @@ class RecommendationService:
     ) -> RecommendationResponse:
         """
         Generate program recommendations based on inmate profile
-        
-        Args:
-            request: Recommendation request with inmate details
-            
-        Returns:
-            RecommendationResponse with program suggestions
+        Uses ML scoring + RAG context + LLM plan generation
         """
         logger.info(f"Generating recommendation for inmate: {request.inmateId}")
         
-        # Extract features
+        # Extract features for ML model
         features = self._extract_features(request)
         
+        # Filter programs by prison type if specified
+        eligible_programs = self._filter_by_prison_type(request.prisonType)
+        
         # Get program scores using ML if available
-        program_scores = self._score_programs(features)
+        program_scores = self._score_programs(features, eligible_programs)
         
         # Generate program recommendations
-        programs = self._create_recommendations(program_scores, request)
+        programs = self._create_recommendations(program_scores, request, eligible_programs)
         
         # Calculate confidence based on feature completeness
         confidence = self._calculate_confidence(request, program_scores)
         
-        # --- NEXT LEVEL UPGRADE: RAG & GenAI ---
+        # --- RAG + GenAI Enhancement ---
         from services.rag_service import rag_service
         from core.openai_client import openai_client
         
@@ -141,14 +212,54 @@ class RecommendationService:
         
         if openai_client.enabled:
             try:
-                # 1. Retrieve RAG Context
-                query = f"rehabilitation for {request.suitabilityGroup} {request.profileFeatures.get('education_level', '')} {request.profileFeatures.get('crime_type', '')}"
-                context = await rag_service.search(query)
+                # 1. Build rich RAG query from extended fields
+                query_parts = [f"rehabilitation for {request.suitabilityGroup}"]
+                if request.caseType:
+                    query_parts.append(request.caseType.replace("_", " "))
+                if request.educationLevel:
+                    query_parts.append(request.educationLevel)
+                if request.hasSubstanceAbuse:
+                    query_parts.append("substance abuse drug")
+                if request.hasMentalHealthIssues:
+                    query_parts.append("mental health")
+                if request.violentHistory:
+                    query_parts.append("violence anger")
+                if request.prisonType:
+                    query_parts.append(request.prisonType.replace("_", " ").lower())
+                if request.age and request.age < 25:
+                    query_parts.append("youth young offender")
+                if request.medicalConditions:
+                    query_parts.append(" ".join(request.medicalConditions))
+                if request.occupation:
+                    query_parts.append(request.occupation)
+                if request.addictions:
+                    query_parts.append(request.addictions)
+                
+                rag_query = " ".join(query_parts)
+                context = await rag_service.search(rag_query, k=5)
                 rag_context_str = rag_service.format_context(context)
                 
-                # 2. Generate Detailed Plan
+                # 2. Build enriched inmate_data dict for LLM
+                enriched_data = {**request.profileFeatures}
+                if request.age: enriched_data["age"] = request.age
+                if request.gender: enriched_data["gender"] = request.gender
+                if request.caseType: enriched_data["caseType"] = request.caseType
+                if request.crimeDescription: enriched_data["crimeDescription"] = request.crimeDescription
+                if request.securityLevel: enriched_data["securityLevel"] = request.securityLevel
+                if request.educationLevel: enriched_data["education_level"] = request.educationLevel
+                if request.occupation: enriched_data["occupation"] = request.occupation
+                if request.medicalConditions: enriched_data["medicalConditions"] = request.medicalConditions
+                if request.behaviorScore is not None: enriched_data["behavior_score"] = request.behaviorScore
+                if request.disciplineScore is not None: enriched_data["discipline_score"] = request.disciplineScore
+                if request.riskScore is not None: enriched_data["risk_score"] = request.riskScore
+                if request.prisonType: enriched_data["prisonType"] = request.prisonType
+                if request.religion: enriched_data["religion"] = request.religion
+                if request.addictions: enriched_data["addictions"] = request.addictions
+                if request.sentenceLengthMonths: enriched_data["sentenceLengthMonths"] = request.sentenceLengthMonths
+                
+                # 3. Generate Detailed Plan via LLM
                 structured_plan_dict = await openai_client.generate_rehabilitation_plan(
-                    inmate_data=request.profileFeatures,
+                    inmate_data=enriched_data,
                     context=rag_context_str
                 )
                 
@@ -157,16 +268,19 @@ class RecommendationService:
                     structured_plan = StructuredPlan(**structured_plan_dict)
                     
             except Exception as e:
-                logger.error(f"Error in Next Level generation: {e}")
+                logger.error(f"Error in RAG/LLM generation: {e}")
         
+        top_program_names = [p.programName for p in programs[:3]]
         explanation = (
             f"ML-based recommendations for suitability group: {request.suitabilityGroup}, "
             f"risk score: {request.riskScore:.2f}. "
-            f"{'AI-generated detailed plan included.' if structured_plan else 'Standard analysis.'}"
+            f"Top programs: {', '.join(top_program_names)}. "
+            f"{'AI-generated structured plan included.' if structured_plan else 'Standard analysis.'}"
+            + (f" Prison type filter: {request.prisonType}." if request.prisonType else "")
         )
         
         return RecommendationResponse(
-            programs=programs[:3],  # Top 3 recommendations
+            programs=programs[:5],  # Top 5 recommendations
             structured_plan=structured_plan,
             explanation=explanation,
             confidence=confidence
@@ -179,7 +293,7 @@ class RecommendationService:
         features = {
             'completion_percentage': request.profileFeatures.get('completion_percentage', 50.0),
             'attendance_rate': request.profileFeatures.get('attendance_rate', 70.0),
-            'behavioral_score': request.profileFeatures.get('behavioral_score', 60.0),
+            'behavioral_score': request.behaviorScore or request.profileFeatures.get('behavioral_score', 60.0),
             'risk_score': request.riskScore
         }
         
@@ -189,7 +303,8 @@ class RecommendationService:
             'mental_health': 1,
             'behavioral': 2,
             'educational_deficit': 3,
-            'general': 4
+            'general': 4,
+            'violent': 2,   # maps to behavioral
         }
         
         suitability_encoded = suitability_map.get(request.suitabilityGroup.lower(), 4)
@@ -203,12 +318,25 @@ class RecommendationService:
         ]).reshape(1, -1)
         
         return feature_array
+
+    def _filter_by_prison_type(self, prison_type: Optional[str]) -> Dict[str, Dict]:
+        """Return programs eligible for the given prison type (all if None)"""
+        if not prison_type:
+            return self.PROGRAM_DATABASE
+        
+        filtered = {}
+        for pid, info in self.PROGRAM_DATABASE.items():
+            allowed = info.get("prison_types")
+            if allowed is None or prison_type in allowed:
+                filtered[pid] = info
+        return filtered
     
-    def _score_programs(self, features: np.ndarray) -> Dict[str, float]:
+    def _score_programs(self, features: np.ndarray, programs: Optional[Dict[str, Dict]] = None) -> Dict[str, float]:
         """Score each program using ML model"""
+        target_programs = programs or self.PROGRAM_DATABASE
         program_scores = {}
         
-        for program_id, program_info in self.PROGRAM_DATABASE.items():
+        for program_id, program_info in target_programs.items():
             if self.model and self.scaler:
                 try:
                     # Scale features
@@ -252,9 +380,11 @@ class RecommendationService:
     def _create_recommendations(
         self, 
         program_scores: Dict[str, float],
-        request: RecommendationRequest
+        request: RecommendationRequest,
+        programs: Optional[Dict[str, Dict]] = None
     ) -> List[ProgramRecommendation]:
         """Create program recommendations from scores"""
+        target_programs = programs or self.PROGRAM_DATABASE
         
         recommendations = []
         
@@ -266,7 +396,9 @@ class RecommendationService:
         )
         
         for program_id, score in sorted_programs:
-            program_info = self.PROGRAM_DATABASE[program_id]
+            program_info = target_programs.get(program_id, self.PROGRAM_DATABASE.get(program_id))
+            if not program_info:
+                continue
             
             # Adjust duration based on risk score
             duration = program_info['duration_weeks']

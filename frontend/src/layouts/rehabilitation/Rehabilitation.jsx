@@ -164,6 +164,7 @@ export default function Rehabilitation() {
   const [generatingFactors, setGeneratingFactors] = useState(false);
   const [allInmates, setAllInmates] = useState([]);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [selectedPrisonType, setSelectedPrisonType] = useState("");
 
   useEffect(() => {
     InmateService.getAllInmates().then(setAllInmates).catch(console.error);
@@ -192,7 +193,7 @@ export default function Rehabilitation() {
       time_served_months: timeServedMonths,
       sentence_length_months: inmate.sentenceDurationMonths ?? null,
       total_incidents: inmate.totalIncidents ?? 0,
-      has_substance_abuse: conditions.some(c => c && (c.toLowerCase().includes("substance") || c.toLowerCase().includes("drug") || c.toLowerCase().includes("withdrawal"))),
+      has_substance_abuse: conditions.some(c => c && (c.toLowerCase().includes("substance") || c.toLowerCase().includes("drug") || c.toLowerCase().includes("withdrawal"))) || (inmate.addictions && inmate.addictions.toLowerCase().includes("drug")),
       has_mental_health_issues: conditions.some(c => c && (c.toLowerCase().includes("mental") || c.toLowerCase().includes("depression") || c.toLowerCase().includes("bipolar") || c.toLowerCase().includes("schizophrenia"))),
       requires_medical_attention: conditions.length > 0,
       violent_history: inmate.violentHistory ?? false,
@@ -215,6 +216,16 @@ export default function Rehabilitation() {
       medical_conditions: conditions,
       first_name: inmate.firstName ?? null,
       last_name: inmate.lastName ?? null,
+      // Demographic & background fields
+      religion: inmate.religion ?? null,
+      marital_status: inmate.maritalStatus ?? null,
+      literacy_level: inmate.literacyLevel ?? null,
+      previous_convictions: inmate.previousConvictions ?? 0,
+      previous_punishments: inmate.previousPunishments ?? null,
+      income_level: inmate.incomeLevel ?? null,
+      addictions: inmate.addictions ?? null,
+      occupation: inmate.occupation ?? null,
+      conviction_status: inmate.convictionStatus ?? 'UNCONVICTED',
     };
   };
 
@@ -233,7 +244,7 @@ export default function Rehabilitation() {
       sentence_length_months: inmate.sentenceDurationMonths || 0,
       programs_completed: 0,
       total_attendance_rate: 0.0,
-      prior_convictions: 0,
+      prior_convictions: inmate.previousConvictions || 0,
       institutional_violations: 0,
       total_incidents: inmate.totalIncidents || 0,
       points_deducted: 0,
@@ -244,7 +255,7 @@ export default function Rehabilitation() {
             (c.toLowerCase().includes("substance") ||
               c.toLowerCase().includes("withdrawal") ||
               c.toLowerCase().includes("drug"))
-        ) || false,
+        ) || (inmate.addictions && inmate.addictions.toLowerCase().includes("drug")) || false,
       has_mental_health_issues:
         conditions.some(
           (c) =>
@@ -254,6 +265,16 @@ export default function Rehabilitation() {
               c.toLowerCase().includes("bipolar") ||
               c.toLowerCase().includes("depression"))
         ) || false,
+      // Demographic & background fields
+      religion: inmate.religion || null,
+      marital_status: inmate.maritalStatus || null,
+      literacy_level: inmate.literacyLevel || null,
+      previous_convictions: inmate.previousConvictions || 0,
+      previous_punishments: inmate.previousPunishments || null,
+      income_level: inmate.incomeLevel || null,
+      addictions: inmate.addictions || null,
+      occupation: inmate.occupation || null,
+      conviction_status: inmate.convictionStatus || 'UNCONVICTED',
     };
   };
 
@@ -306,6 +327,9 @@ export default function Rehabilitation() {
     try {
       setCreatingProfile(inmate.id);
       const aiRequest = mapInmateToAIRequest(inmate);
+      if (selectedPrisonType) {
+        aiRequest.prison_type = selectedPrisonType;
+      }
       await BackendRehabService.createRehabProfile(inmate.id.toString(), aiRequest);
       alert(`Rehabilitation profile created successfully for ${inmate.firstName} ${inmate.lastName}`);
     } catch (err) {
@@ -597,7 +621,25 @@ export default function Rehabilitation() {
                 <ReasoningDisplay reasoning={dynamicResult.reasoning} />
 
                 {dynamicResult.eligible && (
-                  <div className="mt-4 pt-4 border-t border-green-200">
+                  <div className="mt-4 pt-4 border-t border-green-200 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Target Prison Type (for program recommendations)
+                      </label>
+                      <select
+                        value={selectedPrisonType}
+                        onChange={(e) => setSelectedPrisonType(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- All Programs (No Filter) --</option>
+                        <option value="WORK_CAMP">Work Camp</option>
+                        <option value="OPEN_PRISON_CAMP">Open Prison Camp</option>
+                        <option value="TRAINING_SCHOOL">Training School</option>
+                        <option value="CORRECTIONAL_CENTRE">Correctional Centre</option>
+                        <option value="CLOSED_PRISON">Closed Prison</option>
+                        <option value="REMAND_PRISON">Remand Prison</option>
+                      </select>
+                    </div>
                     <button
                       onClick={() => handleCreateProfile(
                         allInmates.find((i) => String(i.id) === String(dynamicInmateId)) || { id: dynamicInmateId }
@@ -608,7 +650,7 @@ export default function Rehabilitation() {
                       {String(creatingProfile) === String(dynamicInmateId) ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />Creating Profile…</>
                       ) : (
-                        <><FilePlus className="w-4 h-4" />Create Rehab Profile</>
+                        <><FilePlus className="w-4 h-4" />Create Rehab Profile & Get Recommendations</>
                       )}
                     </button>
                   </div>

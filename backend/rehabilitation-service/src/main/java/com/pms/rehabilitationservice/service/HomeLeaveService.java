@@ -3,10 +3,9 @@ package com.pms.rehabilitationservice.service;
 import com.pms.rehabilitationservice.dto.GPSUpdateRequest;
 import com.pms.rehabilitationservice.dto.HomeLeaveRequest;
 import com.pms.rehabilitationservice.dto.HomeLeaveResponse;
-import com.pms.rehabilitationservice.model.GPSLocation;
-import com.pms.rehabilitationservice.model.HomeLeave;
-import com.pms.rehabilitationservice.model.HomeLeaveStatus;
+import com.pms.rehabilitationservice.model.*;
 import com.pms.rehabilitationservice.repository.GPSLocationRepository;
+import com.pms.rehabilitationservice.repository.GeofenceAlertRepository;
 import com.pms.rehabilitationservice.repository.HomeLeaveRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +25,7 @@ public class HomeLeaveService {
 
     private final HomeLeaveRepository homeLeaveRepository;
     private final GPSLocationRepository gpsLocationRepository;
+    private final GeofenceAlertRepository geofenceAlertRepository;
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,13 @@ public class HomeLeaveService {
         leave.setConditions(req.getConditions());
         leave.setGpsRequired(req.getGpsRequired() != null ? req.getGpsRequired() : true);
         leave.setStatus(HomeLeaveStatus.PENDING);
+        // Set geofence if provided
+        if (req.getGeofenceCenterLat() != null)
+            leave.setGeofenceCenterLat(req.getGeofenceCenterLat());
+        if (req.getGeofenceCenterLng() != null)
+            leave.setGeofenceCenterLng(req.getGeofenceCenterLng());
+        if (req.getGeofenceRadiusMeters() != null)
+            leave.setGeofenceRadiusMeters(req.getGeofenceRadiusMeters());
         return toResponse(homeLeaveRepository.save(leave));
     }
 
@@ -51,7 +59,8 @@ public class HomeLeaveService {
         }
         leave.setStatus(HomeLeaveStatus.APPROVED);
         leave.setApprovedBy(officerId);
-        if (notes != null) leave.setNotes(notes);
+        if (notes != null)
+            leave.setNotes(notes);
         return toResponse(homeLeaveRepository.save(leave));
     }
 
@@ -63,7 +72,8 @@ public class HomeLeaveService {
         }
         leave.setStatus(HomeLeaveStatus.DENIED);
         leave.setApprovedBy(officerId);
-        if (notes != null) leave.setNotes(notes);
+        if (notes != null)
+            leave.setNotes(notes);
         return toResponse(homeLeaveRepository.save(leave));
     }
 
@@ -97,7 +107,8 @@ public class HomeLeaveService {
         }
         leave.setStatus(HomeLeaveStatus.REVOKED);
         leave.setApprovedBy(officerId);
-        if (notes != null) leave.setNotes(notes);
+        if (notes != null)
+            leave.setNotes(notes);
         return toResponse(homeLeaveRepository.save(leave));
     }
 
@@ -148,18 +159,65 @@ public class HomeLeaveService {
         leave.setLastLocationUpdate(loc.getRecordedAt());
         homeLeaveRepository.save(leave);
 
-        return Map.of(
-                "success", true,
-                "leaveId", leaveId,
-                "latitude", req.getLatitude(),
-                "longitude", req.getLongitude(),
-                "recordedAt", loc.getRecordedAt().toString()
-        );
+        // Geofence check
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("leaveId", leaveId);
+        response.put("latitude", req.getLatitude());
+        response.put("longitude", req.getLongitude());
+        response.put("recordedAt", loc.getRecordedAt().toString());
+
+        if (leave.getGeofenceCenterLat() != null && leave.getGeofenceCenterLng() != null
+                && leave.getGeofenceRadiusMeters() != null && leave.getGeofenceRadiusMeters() > 0) {
+
+            double distance = haversineDistance(
+                    leave.getGeofenceCenterLat(), leave.getGeofenceCenterLng(),
+                    req.getLatitude(), req.getLongitude());
+
+            response.put("distanceFromCenter", Math.round(distance));
+            response.put("allowedRadius", leave.getGeofenceRadiusMeters());
+            response.put("withinBoundary", distance <= leave.getGeofenceRadiusMeters());
+
+            // Create alert if outside boundary or approaching it (>80% of radius)
+            if (distance > leave.getGeofenceRadiusMeters() * 0.8) {
+                AlertSeverity severity = distance > leave.getGeofenceRadiusMeters()
+                        ? AlertSeverity.CRITICAL
+                        : AlertSeverity.WARNING;
+
+                GeofenceAlert alert = new GeofenceAlert();
+                alert.setHomeLeaveId(leaveId);
+                alert.setInmateId(leave.getInmateId());
+                alert.setLatitude(req.getLatitude());
+                alert.setLongitude(req.getLongitude());
+                alert.setDistanceFromCenter(distance);
+                alert.setAllowedRadius(leave.getGeofenceRadiusMeters());
+                alert.setSeverity(severity);
+                geofenceAlertRepository.save(alert);
+
+                response.put("alert", true);
+                response.put("alertSeverity", severity.name());
+                log.warn("GEOFENCE {}: Inmate {} is {}m from center (allowed: {}m) on leave {}",
+                        severity, leave.getInmateId(), Math.round(distance),
+                        leave.getGeofenceRadiusMeters(), leaveId);
+            }
+        }
+
+        return response;
     }
 
     public List<GPSLocation> getGPSHistory(Long leaveId) {
         findOrThrow(leaveId); // validate existence
         return gpsLocationRepository.findByHomeLeaveIdOrderByRecordedAtAsc(leaveId);
+    }
+
+    @Transactional
+    public HomeLeaveResponse updateGeofence(Long id, Double lat, Double lng, Double radiusMeters) {
+        HomeLeave leave = findOrThrow(id);
+        leave.setGeofenceCenterLat(lat);
+        leave.setGeofenceCenterLng(lng);
+        leave.setGeofenceRadiusMeters(radiusMeters);
+        log.info("Geofence updated for leave {}: center ({}, {}), radius {}m", id, lat, lng, radiusMeters);
+        return toResponse(homeLeaveRepository.save(leave));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -185,6 +243,9 @@ public class HomeLeaveService {
         r.setLastKnownLat(h.getLastKnownLat());
         r.setLastKnownLng(h.getLastKnownLng());
         r.setLastLocationUpdate(h.getLastLocationUpdate());
+        r.setGeofenceCenterLat(h.getGeofenceCenterLat());
+        r.setGeofenceCenterLng(h.getGeofenceCenterLng());
+        r.setGeofenceRadiusMeters(h.getGeofenceRadiusMeters());
         r.setNotes(h.getNotes());
         r.setCreatedAt(h.getCreatedAt());
         r.setUpdatedAt(h.getUpdatedAt());
@@ -193,5 +254,19 @@ public class HomeLeaveService {
             r.setDurationDays(ChronoUnit.DAYS.between(h.getStartDate(), h.getEndDate()));
         }
         return r;
+    }
+
+    /**
+     * Haversine formula: calculates distance in meters between two GPS coordinates.
+     */
+    private double haversineDistance(double lat1, double lng1, double lat2, double lng2) {
+        final double R = 6371000; // Earth's radius in meters
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

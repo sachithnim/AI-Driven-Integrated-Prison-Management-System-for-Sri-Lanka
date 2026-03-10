@@ -50,6 +50,9 @@ const emptyForm = {
   contactPhone: "",
   conditions: "",
   gpsRequired: true,
+  geofenceCenterLat: "",
+  geofenceCenterLng: "",
+  geofenceRadiusMeters: "",
 };
 
 export default function HomeLeave() {
@@ -463,6 +466,94 @@ export default function HomeLeave() {
                 />
                 <span className="text-sm font-medium text-gray-700">Require GPS tracking during leave</span>
               </label>
+
+              {/* Geofence Settings */}
+              {form.gpsRequired && (
+                <div className="border border-blue-200 rounded-xl p-3 bg-blue-50 space-y-3">
+                  <p className="text-xs font-semibold text-blue-700">⭕ Geofence Boundary (optional)</p>
+                  {/* Radius presets */}
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="text-[10px] text-blue-600 font-medium mr-1">Quick radius:</span>
+                    {[
+                      { label: "50m (Test)", value: 50 },
+                      { label: "500m",       value: 500 },
+                      { label: "1km",        value: 1000 },
+                      { label: "5km",        value: 5000 },
+                    ].map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, geofenceRadiusMeters: p.value })}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium border transition ${
+                          Number(form.geofenceRadiusMeters) === p.value
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-600 border-gray-300 hover:bg-blue-50"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Custom radius input */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-blue-700 mb-0.5">Radius (meters)</label>
+                    <input
+                      type="number"
+                      min="10"
+                      value={form.geofenceRadiusMeters}
+                      onChange={(e) => setForm({ ...form, geofenceRadiusMeters: e.target.value })}
+                      placeholder="e.g. 50 to test, 1000 for 1 km"
+                      className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                    />
+                  </div>
+                  {/* Center coordinates */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-blue-700 mb-0.5">Center Latitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={form.geofenceCenterLat}
+                        onChange={(e) => setForm({ ...form, geofenceCenterLat: e.target.value })}
+                        placeholder="e.g. 6.9271"
+                        className="w-full border border-blue-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-blue-700 mb-0.5">Center Longitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={form.geofenceCenterLng}
+                        onChange={(e) => setForm({ ...form, geofenceCenterLng: e.target.value })}
+                        placeholder="e.g. 79.8612"
+                        className="w-full border border-blue-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+                  {/* Use current device location */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.geolocation) return;
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => setForm({
+                          ...form,
+                          geofenceCenterLat: pos.coords.latitude.toFixed(6),
+                          geofenceCenterLng: pos.coords.longitude.toFixed(6),
+                        }),
+                        () => alert("Could not get device location")
+                      );
+                    }}
+                    className="w-full text-[10px] py-1.5 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-1"
+                  >
+                    <MapPin size={10} /> Use my current location as center
+                  </button>
+                  <p className="text-[9px] text-blue-500">
+                    Tip: you can also set the geofence from the Live Map after creating the request.
+                  </p>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">

@@ -172,6 +172,177 @@ PROTECTIVE FACTORS:
 - Community ties score ≥ 0.7: 35% lower recidivism.
         """,
     },
+    # ── Sri Lankan Specific Programs ────────────────────────────────────────────
+    {
+        "id": "sl_vocational_nvq",
+        "title": "NVQ Vocational Training Programs – Sri Lanka Prisons",
+        "tags": ["vocational", "nvq", "training", "programs", "skills"],
+        "content": """
+NVQ (National Vocational Qualification) programs offered in Sri Lankan correctional facilities:
+
+NVQ LEVEL 3 PROGRAMS (6-12 months):
+- Carpentry & Furniture Making: Taught at Welikada, Bogambara, and open camps. High employment demand.
+- Masonry & Construction: Available at work camps. Suitable for physically fit inmates. Strong post-release demand.
+- Motor Mechanics & AC Repair: Taught at training schools. Requires basic literacy (Grade 8+).
+- Tailoring & Garment Making: Available at women's prisons and correctional centres. NVQ Level 3 certification.
+- Electrical Wiring: Available at training schools for inmates with O/L or above.
+
+NVQ LEVEL 4 PROGRAMS (12-18 months):
+- Advanced Carpentry: Progression from Level 3. Furniture design and export-quality production.
+- Welding & Metal Fabrication: Available at select work camps with industrial workshops.
+
+AGRICULTURE & FARMING:
+- Paddy Cultivation: Available at open prison camps (Anuradhapura, Pallekele).
+- Organic Farming & Composting: 8-week program at open camps. Suitable for rural background inmates.
+- Animal Husbandry: Poultry and dairy farming at selected open camps.
+- Cinnamon Peeling: Traditional Sri Lankan trade at southern open camps.
+
+SELECTION CRITERIA:
+- Minimum 6 months remaining in sentence.
+- Behavior score > 60 required.
+- Physical fitness assessed for construction programs.
+- Educational background verified (Grade 5+ for basic, O/L+ for electrical/mechanics).
+- Inmates with occupation background (e.g. cultivator, skilled labour) prioritised for matching programs.
+        """,
+    },
+    {
+        "id": "sl_cultural_spiritual",
+        "title": "Cultural & Spiritual Rehabilitation Programs – Sri Lanka",
+        "tags": ["cultural", "spiritual", "meditation", "arts", "programs", "mental_health"],
+        "content": """
+Cultural and spiritual rehabilitation programs in Sri Lankan prisons:
+
+MINDFULNESS MEDITATION (Bhavana):
+- Vipassana Meditation: 10-day silent retreat program conducted by lay teachers. Evidence shows 40% reduction in aggression.
+- Metta Bhavana (Loving-Kindness): Weekly group sessions led by Buddhist monks. Reduces hostility and improves emotional regulation.
+- Daily Meditation: 30-minute morning session. Mandatory for inmates in anger management track.
+- Suitable for all inmates regardless of faith. Secular elements emphasised in mixed groups.
+- Strong evidence: Inmates who complete 8+ meditation sessions show 35% lower disciplinary infractions.
+
+PERFORMING ARTS:
+- Kandyan Dancing (Uda Rata Natum): Traditional dance training at correctional centres. Builds discipline and cultural identity.
+- Drumming (Bera Wadanaya): Therapeutic drumming circles. Proven stress reduction and team-building benefits.
+- Drama Therapy: Role-playing and theatre performed at training schools. Builds empathy and communication skills.
+
+VISUAL ARTS & CRAFTS:
+- Art Therapy: Structured painting and drawing sessions with qualified art therapist. Proven for trauma processing.
+- Batik & Textile Design: Traditional Sri Lankan craft. Marketable skill post-release.
+- Pottery & Ceramics: Available at select facilities with kiln access.
+- Wood Carving: Combines artistic expression with vocational carpentry skills.
+
+RELIGIOUS & CULTURAL PROGRAMS:
+- Dhamma School: Weekly Buddhist education for interested inmates.
+- Multi-faith services: Hindu, Muslim, and Christian services available.
+- Cultural Festivals: Vesak, Thai Pongal, and other cultural celebrations foster community.
+
+SELECTION CRITERIA:
+- Open to all inmates. No minimum behavior score required for basic meditation.
+- Art therapy recommended for inmates with trauma history or mental health needs.
+- Performing arts require physical mobility.
+- Cultural programs improve behavior score by average 15 points over 3 months.
+        """,
+    },
+    {
+        "id": "sl_youth_rehabilitation",
+        "title": "Youth Offender Rehabilitation – Sri Lanka Training Schools",
+        "tags": ["youth", "training_school", "education", "programs"],
+        "content": """
+Rehabilitation programs for young offenders (16-22) at Sri Lanka Training Schools:
+
+EDUCATION:
+- GCE O/L Preparation: Full curriculum for inmates who haven't completed ordinary level exams.
+- GCE A/L Streams: Science, Commerce, and Arts streams at select training schools.
+- Literacy Programs: For inmates with no schooling or Grade 1-5 education level.
+- IT Literacy: Basic computer skills, typing, and office software. 8-week course.
+
+VOCATIONAL (NVQ Level 3):
+- Carpentry, Tailoring, Motor Mechanics prioritised for youth.
+- Apprenticeship-style learning with industry mentors.
+- TVEC (Tertiary and Vocational Education Commission) certified upon completion.
+
+LIFE SKILLS:
+- Financial Literacy: Budgeting, savings, and micro-enterprise planning.
+- Communication & Interview Skills: Preparation for post-release employment.
+- Conflict Resolution: Peer mediation and de-escalation techniques.
+
+COUNSELING:
+- Mandatory weekly individual counseling for all young offenders.
+- Family counseling: Monthly sessions to maintain family bonds.
+- Substance abuse prevention: Targeted program for drug-related offenders.
+
+KEY PRINCIPLES:
+- Youth offenders have highest potential for successful rehabilitation.
+- Focus on education completion and vocational certification.
+- NVQ Vocational Training is strongly recommended for youth with literacy level Grade 8+.
+- Community reintegration plan starts from day one.
+        """,
+    },
+    {
+        "id": "sl_substance_abuse_treatment",
+        "title": "Drug Rehabilitation Programs – Sri Lanka",
+        "tags": ["substance_abuse", "drug", "rehabilitation", "treatment", "programs"],
+        "content": """
+Drug rehabilitation programs in Sri Lankan correctional facilities:
+
+TIER 1 — DETOX & STABILISATION (Weeks 1-4):
+- Medical detox supervised by prison medical officer.
+- Psychiatric assessment for dual-diagnosis (addiction + mental health).
+- Nutritional rehabilitation and physical health restoration.
+
+TIER 2 — THERAPEUTIC COMMUNITY (Weeks 5-16):
+- Intensive group therapy: 5 sessions per week.
+- Cognitive Behavioral Therapy (CBT) for relapse prevention.
+- 12-Step adapted program (Sri Lankan context with Buddhist principles).
+- Family education workshops: Monthly.
+
+TIER 3 — SKILLS & REINTEGRATION (Weeks 17-24):
+- Vocational training (based on NVQ programs).
+- Life skills: trigger management, financial literacy, healthy routines.
+- Community service placements from open camp.
+- Naloxone training for opioid users.
+
+SPECIAL NOTES:
+- Drug Rehab Centres (Senapura, Kandakadu) provide dedicated facilities.
+- Inmates with D_NARCOTIC_DRUGS or D_EXCISE case types automatically flagged.
+- Dual intervention (addiction + vocational) shows 40% better outcomes than treatment alone.
+- GPS monitoring mandatory during community placement phase.
+- Random urine testing throughout program and during home leave.
+        """,
+    },
+    {
+        "id": "sl_medical_rehab_protocol",
+        "title": "Medical-Needs Rehabilitation Protocol – Sri Lanka",
+        "tags": ["medical", "health", "rehabilitation", "protocol", "light_duties"],
+        "content": """
+Rehabilitation protocol for inmates with significant medical needs:
+
+ASSESSMENT:
+- All inmates with chronic conditions assessed by prison medical officer before program placement.
+- Physical fitness classification: A (full activity), B (moderate), C (light duties only), D (bed rest).
+
+LIGHT DUTIES PROGRAMS:
+- Seated workshop: Tailoring, electronics repair, crafts. For mobility-impaired inmates.
+- Administrative training: Data entry, record-keeping. For Class B/C inmates.
+- Art therapy and mindfulness: Low physical demand, high therapeutic value.
+
+CHRONIC CONDITIONS MANAGEMENT:
+- Diabetes: Diet-controlled program with regular monitoring. Avoid heavy physical vocational programs.
+- Cardiac conditions: Light vocational work only. Weekly medical check-up required.
+- TB: Complete treatment isolation before program placement. 6-month treatment minimum.
+- HIV/AIDS: Confidential. All programs accessible. Medication dispensing arranged.
+
+MENTAL HEALTH INTEGRATION:
+- Depression/Anxiety: Counseling-first approach. Vocational placement after stabilisation.
+- PTSD: Trauma-informed programming. Art therapy and meditation prioritised.
+- Psychotic disorders: Stable on medication 6+ months before vocational placement.
+- Intellectual disability: Simplified vocational programs with additional supervision.
+
+KEY PRINCIPLE:
+- Medical needs do NOT disqualify from rehabilitation.
+- Programs adapted to capability, not capability to programs.
+- 'Apple' (medical compassion) profile inmates receive light-duties priority.
+        """,
+    },
 ]
 
 # ---------------------------------------------------------------------------

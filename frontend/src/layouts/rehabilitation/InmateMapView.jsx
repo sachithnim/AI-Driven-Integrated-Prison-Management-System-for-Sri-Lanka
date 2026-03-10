@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import BackendRehabService from "../../services/rehab/backendRehabService";
 import InmateService from "../../services/inmate/inmateService";
-import { MapPin, Navigation, RefreshCw, User, Clock, AlertTriangle } from "lucide-react";
+import { MapPin, Navigation, RefreshCw, User, Clock, AlertTriangle, Bell, Target, Check } from "lucide-react";
 import { useSearchParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -17,15 +17,21 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom coloured marker factory
-function coloredIcon(color) {
+function coloredIcon(color, hasAlert = false) {
+  const badge = hasAlert
+    ? `<div style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#ef4444;border:2px solid white;"></div>`
+    : "";
   return new L.DivIcon({
     className: "",
-    html: `<div style="
-      width:28px;height:28px;border-radius:50% 50% 50% 0;
-      background:${color};border:3px solid #fff;
-      box-shadow:0 2px 8px rgba(0,0,0,0.3);
-      transform:rotate(-45deg);
-    "></div>`,
+    html: `<div style="position:relative;display:inline-block">
+      <div style="
+        width:28px;height:28px;border-radius:50% 50% 50% 0;
+        background:${color};border:3px solid #fff;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        transform:rotate(-45deg);
+      "></div>
+      ${badge}
+    </div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 28],
     popupAnchor: [0, -30],
@@ -39,6 +45,21 @@ const STATUS_COLORS = {
   REVOKED:   "#ef4444",
   COMPLETED: "#6b7280",
 };
+
+const RADIUS_PRESETS = [
+  { label: "50m (Test)", value: 50 },
+  { label: "200m",       value: 200 },
+  { label: "500m",       value: 500 },
+  { label: "1km",        value: 1000 },
+  { label: "5km",        value: 5000 },
+];
+
+function MapClickHandler({ active, onMapClick }) {
+  useMapEvents({
+    click: (e) => { if (active) onMapClick(e.latlng); },
+  });
+  return null;
+}
 
 // Component to recenter map when needed
 function RecenterMap({ center }) {
@@ -56,27 +77,36 @@ export default function InmateMapView() {
   const [activeLeaves, setActiveLeaves] = useState([]);
   const [allLeaves, setAllLeaves]       = useState([]);
   const [inmates, setInmates]           = useState([]);
-  const [gpsHistories, setGpsHistories] = useState({}); // leaveId → GPSLocation[]
+  const [gpsHistories, setGpsHistories] = useState({});
+  const [geofenceAlerts, setGeofenceAlerts] = useState([]);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [mapCenter, setMapCenter] = useState([7.8731, 80.7718]); // Sri Lanka centre
+  // Geofence setter
+  const [geofenceSetMode, setGeofenceSetMode] = useState(false);
+  const [pendingGeofence, setPendingGeofence] = useState(null); // { lat, lng }
+  const [geofenceRadius, setGeofenceRadius]   = useState(50);   // default 50m for easy testing
+  const [savingGeofence, setSavingGeofence]   = useState(false);
   const autoRefreshRef = useRef(null);
 
   const loadData = useCallback(async () => {
     try {
-      const [active, all, inmatesData] = await Promise.all([
+      const [active, all, inmatesData, alerts] = await Promise.all([
         BackendRehabService.getActiveHomeLeaves(),
         BackendRehabService.getAllHomeLeaves(),
         InmateService.getAllInmates(),
+        BackendRehabService.getUnacknowledgedAlerts().catch(() => []),
       ]);
       setActiveLeaves(active);
       setAllLeaves(all);
       setInmates(inmatesData);
+      setGeofenceAlerts(alerts);
 
-      // Load GPS history for all active leaves
+      // Load GPS history for ALL leaves that have a recorded position (not just active)
+      const leavesNeedingHistory = all.filter((l) => l.lastKnownLat && l.lastKnownLng);
       const histories = {};
       await Promise.all(
-        active.map(async (leave) => {
+        leavesNeedingHistory.map(async (leave) => {
           try {
             histories[leave.id] = await BackendRehabService.getGPSHistory(leave.id);
           } catch {
@@ -92,7 +122,7 @@ export default function InmateMapView() {
         if (target?.lastKnownLat && target?.lastKnownLng) {
           setMapCenter([target.lastKnownLat, target.lastKnownLng]);
         }
-        setSelectedLeave(target || null);
+        setSelectedLeave((prev) => prev ?? target ?? null);
       }
     } catch (e) {
       console.error(e);
@@ -103,8 +133,8 @@ export default function InmateMapView() {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh every 30 seconds
-    autoRefreshRef.current = setInterval(loadData, 30_000);
+    // Auto-refresh every 15 seconds (fast enough to see live GPS updates)
+    autoRefreshRef.current = setInterval(loadData, 15_000);
     return () => clearInterval(autoRefreshRef.current);
   }, [loadData]);
 
@@ -122,6 +152,45 @@ export default function InmateMapView() {
     }
   };
 
+  const handleMapClick = ({ lat, lng }) => {
+    setPendingGeofence({ lat, lng });
+    setGeofenceSetMode(false);
+  };
+
+  const handleSetGeofenceFromLastPosition = () => {
+    if (!selectedLeave?.lastKnownLat) return;
+    setPendingGeofence({ lat: selectedLeave.lastKnownLat, lng: selectedLeave.lastKnownLng });
+  };
+
+  const handleSaveGeofence = async () => {
+    if (!selectedLeave || !pendingGeofence) return;
+    setSavingGeofence(true);
+    try {
+      await BackendRehabService.updateGeofence(
+        selectedLeave.id, pendingGeofence.lat, pendingGeofence.lng, geofenceRadius
+      );
+      toast.success(`Geofence set: ${geofenceRadius}m radius`);
+      setPendingGeofence(null);
+      loadData();
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to save geofence");
+    } finally {
+      setSavingGeofence(false);
+    }
+  };
+
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      await BackendRehabService.acknowledgeAlert(alertId, "admin");
+      setGeofenceAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      toast.success("Alert acknowledged");
+    } catch {
+      toast.error("Failed to acknowledge");
+    }
+  };
+
+  // Quick lookup sets
+  const alertedLeaveIds = new Set(geofenceAlerts.map((a) => a.homeLeaveId));
   const leavesWithPosition = allLeaves.filter((l) => l.lastKnownLat && l.lastKnownLng);
 
   const formatTime = (iso) => {
@@ -153,6 +222,44 @@ export default function InmateMapView() {
           </button>
         </div>
 
+        {/* Geofence Alerts Panel */}
+        {geofenceAlerts.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
+            <div className="px-3 py-2 bg-red-100 border-b border-red-200 flex items-center gap-1.5">
+              <Bell size={12} className="text-red-600 animate-bounce" />
+              <span className="text-xs font-bold text-red-700">
+                Geofence Alerts ({geofenceAlerts.length})
+              </span>
+            </div>
+            <div className="divide-y divide-red-100 max-h-48 overflow-y-auto">
+              {geofenceAlerts.map((alert) => (
+                <div key={alert.id} className="px-3 py-2 flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[11px] font-bold ${
+                      alert.severity === "CRITICAL" ? "text-red-700" : "text-orange-600"
+                    }`}>
+                      {alert.severity === "CRITICAL" ? "🚨" : "⚠️"} {alert.severity}
+                    </p>
+                    <p className="text-[10px] text-red-600 font-medium truncate">{getInmateName(alert.inmateId)}</p>
+                    <p className="text-[10px] text-gray-500">
+                      {Math.round(alert.distanceFromCenter)}m from center
+                      &nbsp;(limit: {Math.round(alert.allowedRadius)}m)
+                    </p>
+                    <p className="text-[9px] text-gray-400">{formatTime(alert.alertedAt)}</p>
+                  </div>
+                  <button
+                    onClick={() => handleAcknowledgeAlert(alert.id)}
+                    className="flex-shrink-0 p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded transition"
+                    title="Acknowledge alert"
+                  >
+                    <Check size={11} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Legend */}
         <div className="bg-white rounded-xl border border-gray-200 p-3 text-xs space-y-1.5">
           <p className="font-semibold text-gray-600 mb-2">Map Legend</p>
@@ -162,6 +269,10 @@ export default function InmateMapView() {
               <span className="text-gray-600">{s}</span>
             </div>
           ))}
+          <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
+            <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="text-gray-500">Red dot = geofence alert</span>
+          </div>
         </div>
 
         {/* Active leave list */}
@@ -190,7 +301,12 @@ export default function InmateMapView() {
                       <div className="flex items-center gap-1.5">
                         <User size={12} className="text-gray-400 flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-semibold text-gray-800">{getInmateName(leave.inmateId)}</p>
+                            <p className="text-xs font-semibold text-gray-800 flex items-center gap-1">
+                              {getInmateName(leave.inmateId)}
+                              {alertedLeaveIds.has(leave.id) && (
+                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" title="Geofence alert" />
+                              )}
+                            </p>
                           <p className="text-[10px] text-gray-400">{leave.inmateId}</p>
                         </div>
                       </div>
@@ -235,12 +351,90 @@ export default function InmateMapView() {
                 </p>
               )}
               <p><span className="text-gray-500">GPS points:</span> {(gpsHistories[selectedLeave.id] || []).length}</p>
+              {selectedLeave.geofenceRadiusMeters ? (
+                <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="font-semibold text-blue-700 text-[11px] mb-1">⭕ Geofence Active</p>
+                  <p className="text-[10px] text-blue-600">Radius: {selectedLeave.geofenceRadiusMeters}m</p>
+                  <p className="text-[10px] text-blue-600 font-mono">
+                    Center: {selectedLeave.geofenceCenterLat?.toFixed(5)}, {selectedLeave.geofenceCenterLng?.toFixed(5)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[10px] text-gray-400 italic">No geofence configured</p>
+              )}
+            </div>
+
+            {/* ── Geofence Setter ── */}
+            <div className="pt-2 border-t border-gray-100">
+              <p className="font-semibold text-gray-600 mb-1.5 text-[11px] flex items-center gap-1">
+                <Target size={10} /> Set / Update Geofence
+              </p>
+              {/* Radius presets */}
+              <div className="flex flex-wrap gap-1 mb-2">
+                {RADIUS_PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setGeofenceRadius(p.value)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium border transition ${
+                      geofenceRadius === p.value
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {/* Use inmate's last known position */}
+              {selectedLeave.lastKnownLat && (
+                <button
+                  onClick={handleSetGeofenceFromLastPosition}
+                  className="w-full text-[10px] py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-100 transition mb-1 flex items-center justify-center gap-1"
+                >
+                  <MapPin size={10} /> Use last known position ({geofenceRadius}m)
+                </button>
+              )}
+              {/* Click map mode */}
+              <button
+                onClick={() => { setGeofenceSetMode((m) => !m); setPendingGeofence(null); }}
+                className={`w-full text-[10px] py-1.5 border rounded-lg transition flex items-center justify-center gap-1 ${
+                  geofenceSetMode
+                    ? "bg-amber-100 border-amber-400 text-amber-700 font-semibold"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <Target size={10} />
+                {geofenceSetMode ? "📍 Click map to place center…" : "Click map to place center"}
+              </button>
+              {/* Pending geofence save/cancel */}
+              {pendingGeofence && (
+                <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-[10px] text-amber-700 font-semibold mb-0.5">Pending center:</p>
+                  <p className="text-[10px] text-amber-600 font-mono">
+                    {pendingGeofence.lat.toFixed(5)}, {pendingGeofence.lng.toFixed(5)}
+                  </p>
+                  <p className="text-[10px] text-amber-600">Radius: {geofenceRadius}m</p>
+                  <button
+                    onClick={handleSaveGeofence}
+                    disabled={savingGeofence}
+                    className="w-full mt-1.5 py-1 bg-amber-500 text-white rounded text-[10px] font-semibold hover:bg-amber-600 transition disabled:opacity-50"
+                  >
+                    {savingGeofence ? "Saving…" : "✓ Save Geofence"}
+                  </button>
+                  <button
+                    onClick={() => setPendingGeofence(null)}
+                    className="w-full mt-0.5 py-0.5 text-gray-400 text-[10px] hover:text-gray-600 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         <Link
-          to="/rehabilitation/home-leave"
+          to="/home-leave"
           className="text-xs text-indigo-600 hover:underline text-center"
         >
           ← Back to Home Leave Management
@@ -248,7 +442,14 @@ export default function InmateMapView() {
       </div>
 
       {/* Map */}
-      <div className="flex-1 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+      <div className={`flex-1 rounded-2xl overflow-hidden border shadow-sm relative ${
+        geofenceSetMode ? "border-amber-400 ring-2 ring-amber-300" : "border-gray-200"
+      }`}>
+        {geofenceSetMode && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[500] bg-amber-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg pointer-events-none">
+            📍 Click on the map to place the geofence center
+          </div>
+        )}
         {loading ? (
           <div className="h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">
             Loading map…
@@ -260,6 +461,7 @@ export default function InmateMapView() {
             style={{ height: "100%", width: "100%" }}
           >
             <RecenterMap center={mapCenter} />
+            <MapClickHandler active={geofenceSetMode} onMapClick={handleMapClick} />
 
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -271,7 +473,7 @@ export default function InmateMapView() {
               <Marker
                 key={leave.id}
                 position={[leave.lastKnownLat, leave.lastKnownLng]}
-                icon={coloredIcon(STATUS_COLORS[leave.status] || "#6b7280")}
+                icon={coloredIcon(STATUS_COLORS[leave.status] || "#6b7280", alertedLeaveIds.has(leave.id))}
                 eventHandlers={{ click: () => handleMarkerClick(leave) }}
               >
                 <Popup>
@@ -291,18 +493,58 @@ export default function InmateMapView() {
                     {leave.lastLocationUpdate && (
                       <p className="text-gray-400">Updated: {formatTime(leave.lastLocationUpdate)}</p>
                     )}
+                    {alertedLeaveIds.has(leave.id) && (
+                      <p className="text-red-600 font-semibold mt-1">⚠️ Geofence alert active!</p>
+                    )}
                   </div>
                 </Popup>
               </Marker>
             ))}
 
-            {/* GPS track polyline for selected leave */}
-            {selectedLeave && (gpsHistories[selectedLeave.id] || []).length > 1 && (
-              <Polyline
-                positions={(gpsHistories[selectedLeave.id] || []).map((p) => [p.latitude, p.longitude])}
-                pathOptions={{ color: "#6366f1", weight: 3, opacity: 0.8, dashArray: "6,4" }}
+            {/* GPS track polylines for ALL active leaves — selected = highlighted */}
+            {Object.entries(gpsHistories)
+              .filter(([, pts]) => pts.length > 1)
+              .map(([id, pts]) => {
+                const isSelected = selectedLeave?.id === Number(id);
+                return (
+                  <Polyline
+                    key={`track-${id}`}
+                    positions={pts.map((p) => [p.latitude, p.longitude])}
+                    pathOptions={
+                      isSelected
+                        ? { color: "#6366f1", weight: 4, opacity: 0.9, dashArray: "6,4" }
+                        : { color: "#94a3b8", weight: 2, opacity: 0.55, dashArray: "4,4" }
+                    }
+                  />
+                );
+              })}
+
+            {/* Pending geofence preview circle */}
+            {pendingGeofence && (
+              <Circle
+                center={[pendingGeofence.lat, pendingGeofence.lng]}
+                radius={geofenceRadius}
+                pathOptions={{ color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.15, weight: 2, dashArray: "5,5" }}
               />
             )}
+
+            {/* Geofence circles - red when breached, blue when active, grey otherwise */}
+            {leavesWithPosition
+              .filter((l) => l.geofenceCenterLat && l.geofenceCenterLng && l.geofenceRadiusMeters)
+              .map((leave) => (
+                <Circle
+                  key={`geofence-${leave.id}`}
+                  center={[leave.geofenceCenterLat, leave.geofenceCenterLng]}
+                  radius={leave.geofenceRadiusMeters}
+                  pathOptions={{
+                    color: alertedLeaveIds.has(leave.id) ? '#ef4444' : leave.status === 'ACTIVE' ? '#3b82f6' : '#9ca3af',
+                    fillColor: alertedLeaveIds.has(leave.id) ? '#ef4444' : leave.status === 'ACTIVE' ? '#3b82f6' : '#9ca3af',
+                    fillOpacity: 0.08,
+                    weight: alertedLeaveIds.has(leave.id) ? 3 : 2,
+                    dashArray: '5,5'
+                  }}
+                />
+              ))}
           </MapContainer>
         )}
       </div>

@@ -1,11 +1,11 @@
 import axios from "axios";
 
-// Use runtime config if available, fallback to build-time env var
+// Use runtime config if available, fallback to build-time env var, then empty string
 const getBaseURL = () => {
   if (window.ENV && window.ENV.VITE_BASE_URL && window.ENV.VITE_BASE_URL !== '__VITE_BASE_URL__') {
     return window.ENV.VITE_BASE_URL;
   }
-  return import.meta.env.VITE_BASE_URL;
+  return import.meta.env.VITE_BASE_URL || '';
 };
 
 const createApiClient = (baseURL = getBaseURL()) => {

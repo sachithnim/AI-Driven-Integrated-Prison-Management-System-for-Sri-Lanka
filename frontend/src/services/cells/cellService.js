@@ -1,6 +1,9 @@
 import createApiClient from "../axiosInstance.js";
 
-const baseURL = import.meta.env.VITE_INMATE_SERVICE_URL;
+// Empty base URL — /cells/* proxied by Vite → http://localhost:4007
+// Set VITE_INMATE_SERVICE_URL in .env to override
+const baseURL = import.meta.env.VITE_INMATE_SERVICE_URL || '';
+
 
 const apiClient = createApiClient(baseURL);
 

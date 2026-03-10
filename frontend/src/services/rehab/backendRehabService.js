@@ -1,8 +1,8 @@
 import createApiClient from "../axiosInstance";
 
-// Rehabilitation Service URL (Java Backend)
-// Assuming it runs on port 4006 based on application.properties
-const REHAB_SERVICE_URL = "http://localhost:4006"; 
+// Empty base URL — requests are proxied by Vite (/rehabilitation → port 4006).
+// Set VITE_REHAB_SERVICE_URL in .env to override (e.g. on a separate machine).
+const REHAB_SERVICE_URL = import.meta.env.VITE_REHAB_SERVICE_URL || '';
 
 const apiClient = createApiClient(REHAB_SERVICE_URL);
 
@@ -206,6 +206,133 @@ const BackendRehabService = {
         const response = await apiClient.get(`/rehabilitation/home-leave/${leaveId}/gps/history`);
         return response.data;
     },
+
+    updateGeofence: async (leaveId, lat, lng, radiusMeters) => {
+        const response = await apiClient.put(`/rehabilitation/home-leave/${leaveId}/geofence`, null, {
+            params: { lat, lng, radiusMeters },
+        });
+        return response.data;
+    },
+
+    // ── Work Release ────────────────────────────────────────────────────────────
+
+    createWorkRelease: async (payload) => {
+        const response = await apiClient.post("/rehabilitation/work-release", payload);
+        return response.data;
+    },
+
+    getAllWorkReleases: async () => {
+        const response = await apiClient.get("/rehabilitation/work-release");
+        return response.data;
+    },
+
+    getActiveWorkReleases: async () => {
+        const response = await apiClient.get("/rehabilitation/work-release/active");
+        return response.data;
+    },
+
+    getWorkReleasesByInmate: async (inmateId) => {
+        const response = await apiClient.get(`/rehabilitation/work-release/inmate/${inmateId}`);
+        return response.data;
+    },
+
+    approveWorkRelease: async (id, officerId) => {
+        const params = { officerId: officerId || "admin" };
+        const response = await apiClient.put(`/rehabilitation/work-release/${id}/approve`, null, { params });
+        return response.data;
+    },
+
+    activateWorkRelease: async (id) => {
+        const response = await apiClient.put(`/rehabilitation/work-release/${id}/activate`);
+        return response.data;
+    },
+
+    completeWorkRelease: async (id) => {
+        const response = await apiClient.put(`/rehabilitation/work-release/${id}/complete`);
+        return response.data;
+    },
+
+    revokeWorkRelease: async (id, officerId, reason) => {
+        const params = { officerId: officerId || "admin" };
+        if (reason) params.reason = reason;
+        const response = await apiClient.put(`/rehabilitation/work-release/${id}/revoke`, null, { params });
+        return response.data;
+    },
+
+    // ── License Release ─────────────────────────────────────────────────────────
+
+    createLicenseRelease: async (payload) => {
+        const response = await apiClient.post("/rehabilitation/license-release", payload);
+        return response.data;
+    },
+
+    getAllLicenseReleases: async () => {
+        const response = await apiClient.get("/rehabilitation/license-release");
+        return response.data;
+    },
+
+    getActiveLicenseReleases: async () => {
+        const response = await apiClient.get("/rehabilitation/license-release/active");
+        return response.data;
+    },
+
+    getLicenseReleasesByInmate: async (inmateId) => {
+        const response = await apiClient.get(`/rehabilitation/license-release/inmate/${inmateId}`);
+        return response.data;
+    },
+
+    approveLicenseRelease: async (id, officerId) => {
+        const params = { officerId: officerId || "admin" };
+        const response = await apiClient.put(`/rehabilitation/license-release/${id}/approve`, null, { params });
+        return response.data;
+    },
+
+    activateLicenseRelease: async (id) => {
+        const response = await apiClient.put(`/rehabilitation/license-release/${id}/activate`);
+        return response.data;
+    },
+
+    completeLicenseRelease: async (id) => {
+        const response = await apiClient.put(`/rehabilitation/license-release/${id}/complete`);
+        return response.data;
+    },
+
+    revokeLicenseRelease: async (id, officerId, reason) => {
+        const params = { officerId: officerId || "admin" };
+        if (reason) params.reason = reason;
+        const response = await apiClient.put(`/rehabilitation/license-release/${id}/revoke`, null, { params });
+        return response.data;
+    },
+
+    // ── Geofence Alerts ─────────────────────────────────────────────────────────
+
+    getAllGeofenceAlerts: async () => {
+        const response = await apiClient.get("/rehabilitation/geofence-alerts");
+        return response.data;
+    },
+
+    getUnacknowledgedAlerts: async () => {
+        const response = await apiClient.get("/rehabilitation/geofence-alerts/unacknowledged");
+        return response.data;
+    },
+
+    getAlertsByInmate: async (inmateId) => {
+        const response = await apiClient.get(`/rehabilitation/geofence-alerts/inmate/${inmateId}`);
+        return response.data;
+    },
+
+    getAlertsByHomeLeave: async (homeLeaveId) => {
+        const response = await apiClient.get(`/rehabilitation/geofence-alerts/home-leave/${homeLeaveId}`);
+        return response.data;
+    },
+
+    acknowledgeAlert: async (alertId, officerId, notes) => {
+        const params = { officerId: officerId || "admin" };
+        if (notes) params.notes = notes;
+        const response = await apiClient.put(`/rehabilitation/geofence-alerts/${alertId}/acknowledge`, null, { params });
+        return response.data;
+    },
 };
 
 export default BackendRehabService;
+

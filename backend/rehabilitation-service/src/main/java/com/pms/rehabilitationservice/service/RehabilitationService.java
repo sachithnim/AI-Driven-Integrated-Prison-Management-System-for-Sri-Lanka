@@ -58,13 +58,36 @@ public class RehabilitationService {
         RehabProfile profile = profileRepository.findByInmateId(inmateId)
                 .orElseGet(() -> createInitialProfile(inmateId, request.getInmateData()));
         
-        // Call AI service for recommendations
-        AIRecommendationRequest aiRequest = new AIRecommendationRequest(
-                inmateId,
-                profile.getProfileFeatures(),
-                profile.getSuitabilityGroup(),
-                profile.getRiskScore()
-        );
+        Map<String, Object> features = profile.getProfileFeatures() != null
+                ? profile.getProfileFeatures() : Map.of();
+        
+        // Build AI request with enriched inmate context
+        AIRecommendationRequest aiRequest = AIRecommendationRequest.builder()
+                .inmateId(inmateId)
+                .profileFeatures(features)
+                .suitabilityGroup(profile.getSuitabilityGroup())
+                .riskScore(profile.getRiskScore())
+                .age(toInt(features.get("age")))
+                .gender(toStr(features.get("gender")))
+                .caseType(toStr(features.get("case_type")))
+                .crimeDescription(toStr(features.get("crime_description")))
+                .securityLevel(toStr(features.get("security_level")))
+                .sentenceLengthMonths(toInt(features.get("sentence_length_months")))
+                .timeServedMonths(toInt(features.get("time_served_months")))
+                .behaviorScore(toDoubleObj(features.get("behavior_score")))
+                .disciplineScore(toDoubleObj(features.get("discipline_score")))
+                .medicalConditions(toStringList(features.get("medical_conditions")))
+                .hasSubstanceAbuse(toBool(features.get("has_substance_abuse")))
+                .hasMentalHealthIssues(toBool(features.get("has_mental_health_issues")))
+                .educationLevel(toStr(features.get("education_level")))
+                .occupation(toStr(features.get("occupation")))
+                .religion(toStr(features.get("religion")))
+                .previousConvictions(toInt(features.get("prior_convictions")))
+                .violentHistory(toBool(features.get("violent_history")))
+                .familySupport(toDoubleObj(features.get("family_support")))
+                .addictions(toStr(features.get("addictions")))
+                .prisonType(toStr(features.get("prison_type")))
+                .build();
         
         AIRecommendationResponse aiResponse = aiServiceClient.getRecommendations(aiRequest);
         
@@ -477,6 +500,33 @@ public class RehabilitationService {
     private double toDouble(Object val, double fallback) {
         if (val == null) return fallback;
         try { return Double.parseDouble(val.toString()); } catch (Exception e) { return fallback; }
+    }
+
+    private Double toDoubleObj(Object val) {
+        if (val == null) return null;
+        try { return Double.parseDouble(val.toString()); } catch (Exception e) { return null; }
+    }
+
+    private Integer toInt(Object val) {
+        if (val == null) return null;
+        try { return (int) Double.parseDouble(val.toString()); } catch (Exception e) { return null; }
+    }
+
+    private String toStr(Object val) {
+        return val != null ? val.toString() : null;
+    }
+
+    private Boolean toBool(Object val) {
+        if (val == null) return null;
+        if (val instanceof Boolean) return (Boolean) val;
+        return Boolean.parseBoolean(val.toString());
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> toStringList(Object val) {
+        if (val == null) return null;
+        if (val instanceof List) return (List<String>) val;
+        return List.of(val.toString());
     }
 
     private RehabProfile createInitialProfile(String inmateId, Map<String, Object> data) {

@@ -22,6 +22,7 @@ import {
   Grid3x3,
   ShieldAlert,
   Home,
+  Building2
   FolderOpen,
   History,
   HeartPulse,
@@ -102,6 +103,11 @@ const sidebarItems = [
         name: "Cells",
         path: "/cells",
         icon: Grid3x3,
+      },
+      {
+        name: "Prisons",
+        path: "/prisons",
+        icon: Building2,
       },
       {
         name: "Staff",

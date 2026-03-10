@@ -15,4 +15,8 @@ public class HomeLeaveRequest {
     private String conditions;
     private Boolean gpsRequired = true;
     private String requestedBy; // officer ID making the request
+    // Geofence settings
+    private Double geofenceCenterLat;
+    private Double geofenceCenterLng;
+    private Double geofenceRadiusMeters;
 }
