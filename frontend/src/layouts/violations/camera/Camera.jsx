@@ -1,6 +1,12 @@
-import React, { useEffect } from 'react';
-import { Camera as CameraIcon, Loader, AlertCircle, Play, Square } from 'lucide-react';
-import { useCamera } from '../../context/CameraContext';
+import React, { useEffect } from "react";
+import {
+  Camera as CameraIcon,
+  Loader,
+  AlertCircle,
+  Play,
+  Square,
+} from "lucide-react";
+import { useCamera } from "../../../context/CameraContext";
 
 export default function Camera() {
   const {
@@ -31,9 +37,13 @@ export default function Camera() {
         <div className="mb-4">
           <div className="flex items-center gap-3 mb-2">
             <CameraIcon className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Security Monitoring</h1>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Security Monitoring
+            </h1>
           </div>
-          <p className="text-slate-600">Live camera feed for prison surveillance</p>
+          <p className="text-slate-600">
+            Live camera feed for prison surveillance
+          </p>
         </div>
 
         {/* Main Camera Container */}
@@ -46,7 +56,9 @@ export default function Camera() {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                     <div className="text-center">
                       <Loader className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-3" />
-                      <p className="text-white font-medium">Initializing camera...</p>
+                      <p className="text-white font-medium">
+                        Initializing camera...
+                      </p>
                     </div>
                   </div>
                 )}
@@ -55,7 +67,9 @@ export default function Camera() {
                   <div className="absolute inset-0 flex items-center justify-center bg-red-900/90 z-10 p-4">
                     <div className="text-center">
                       <AlertCircle className="w-12 h-12 text-red-300 mx-auto mb-3" />
-                      <p className="text-red-100 font-medium text-sm">{error}</p>
+                      <p className="text-red-100 font-medium text-sm">
+                        {error}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -72,9 +86,11 @@ export default function Camera() {
               {/* Video Stats */}
               <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full ${isCameraActive ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+                  ></div>
                   <span className="text-sm font-medium">
-                    {isCameraActive ? 'LIVE' : 'OFFLINE'}
+                    {isCameraActive ? "LIVE" : "OFFLINE"}
                   </span>
                 </div>
                 <span className="text-xs text-slate-400">
@@ -148,8 +164,10 @@ export default function Camera() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">Status:</span>
-                    <span className={`font-semibold ${isCameraActive ? 'text-green-600' : 'text-red-600'}`}>
-                      {isCameraActive ? 'Active' : 'Inactive'}
+                    <span
+                      className={`font-semibold ${isCameraActive ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {isCameraActive ? "Active" : "Inactive"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -157,12 +175,14 @@ export default function Camera() {
                     <span className="text-slate-700 font-medium">
                       {isCameraActive && videoRef.current?.videoWidth
                         ? `${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`
-                        : 'N/A'}
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Cameras:</span>
-                    <span className="text-slate-700 font-medium">{devices.length}</span>
+                    <span className="text-slate-700 font-medium">
+                      {devices.length}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -170,7 +190,9 @@ export default function Camera() {
               {/* Info Box */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-xs text-blue-700">
-                  <span className="font-semibold">Note:</span> Camera feed runs in background across all pages. Use global API to access frame data.
+                  <span className="font-semibold">Note:</span> Camera feed runs
+                  in background across all pages. Use global API to access frame
+                  data.
                 </p>
               </div>
             </div>

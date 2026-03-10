@@ -2,8 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../layouts/homeLayout/HomeLayout";
 import Dashboard from "../layouts/dashboard/Dashboard";
 import SignIn from "../layouts/signin/SignIn";
-import CameraManagement from "../layouts/camera/CameraManagement";
-import CCTVGrid from "../layouts/camera/CCTVGrid";
+import CameraManagement from "../layouts/violations/camera/CameraManagement";
+import CCTVGrid from "../layouts/violations/camera/CCTVGrid";
 import Overcrowding from "../layouts/overcrowding/Overcrowding";
 import Rehabilitation from "../layouts/rehabilitation/Rehabilitation";
 import Inmates from "../layouts/inmates/Inmates";
@@ -18,6 +18,11 @@ import InmateMapView from "../layouts/rehabilitation/InmateMapView";
 import InmateDetail from "../layouts/inmates/InmateDetail";
 import Incidents from "../layouts/violations/Incidents";
 import GPSReporter from "../layouts/rehabilitation/GPSReporter";
+import SurveyCamera from "../layouts/survey/SurveyCamera";
+import SupportDocs from "../layouts/survey/SupportDocs";
+import InmatesHistory from "../layouts/wellness/InmatesHistory";
+import CommonDocs from "../layouts/wellness/CommonDocs";
+
 
 export const router = createBrowserRouter([
   {
@@ -80,6 +85,27 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: "/survey",
+        children: [
+          {
+            index: true,
+            element: <SurveyCamera />,
+          },
+          {
+            path: "support-docs",
+            element: <SupportDocs />,
+          },
+          {
+            path: "history",
+            element: <InmatesHistory />,
+          },
+          {
+            path: "common-docs",
+            element: <CommonDocs />,
+          },
+        ],
+      },
+      {
         path: "/inmates",
         children: [
           {
@@ -100,10 +126,7 @@ export const router = createBrowserRouter([
         path: "/cells",
         element: <Cells />,
       },
-      {
-        path: "/violations",
-        element: <Violations />,
-      },
+
       {
         path: "/incidents",
         element: <Incidents />,
