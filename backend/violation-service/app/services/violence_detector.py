@@ -113,7 +113,8 @@ class ViolenceDetectorService:
                             res.get('weapon_conf', 0.0), 
                             res.get('fight_conf', 0.0), 
                             res.get('scream_conf', 0.0), 
-                            res.get('weapon_name')
+                            res.get('weapon_name'),
+                            res.get('scream_name')
                         )
             except Exception as e:
                 print(f"Redis listener error: {e}")
@@ -331,7 +332,7 @@ class ViolenceDetectorService:
 
 
 
-    async def _create_alert(self, camera_id, level, weapon_score, fight_score, audio_score, weapon_name=None):
+    async def _create_alert(self, camera_id, level, weapon_score, fight_score, audio_score, weapon_name=None, audio_name=None):
         """
         Broadcast alert to WebSocket clients.
         """
@@ -349,7 +350,7 @@ class ViolenceDetectorService:
         def db_logic():
             # Get SessionLocal
             from app.db.base import SessionLocal
-            from app.db.models import Incident, Alert
+            from app.db.models import Incident, Alert, Camera
             from sqlalchemy import desc
             from datetime import timezone
             
@@ -361,6 +362,15 @@ class ViolenceDetectorService:
                 incident_id = None
                 is_new_incident = False
                 
+                cam_location = "Unknown"
+                cam = db.query(Camera).filter(Camera.id == camera_id).first()
+                if not cam:
+                    cam = Camera(id=camera_id, location="Unknown", status="active")
+                    db.add(cam)
+                    db.commit()
+                else:
+                    cam_location = cam.location
+                    
                 if last_incident and last_incident.timestamp:
                     # convert to naive if needed, or both to utc
                     time_diff = now - last_incident.timestamp
@@ -372,15 +382,8 @@ class ViolenceDetectorService:
                 
                 if not incident_id:
                     is_new_incident = True
-                    # Check if camera exists, and if not create it
-                    from app.db.models import Camera
-                    cam = db.query(Camera).filter(Camera.id == camera_id).first()
-                    if not cam:
-                        cam = Camera(id=camera_id, location="Unknown", status="active")
-                        db.add(cam)
-                        db.commit()
-                        
-                    new_inc = Incident(camera_id=camera_id, type="Violence", severity=level, description=f"Weapon: {weapon_score}, Fight: {fight_score}")
+                    fight_str = 'Yes' if fight_score > 0.3 else 'No'
+                    new_inc = Incident(camera_id=camera_id, type="Violence", severity=level, description=f"Weapon: {weapon_name or 'None'}, Fight: {fight_str}, Audio: {audio_name or 'None'}")
                     db.add(new_inc)
                     db.commit()
                     db.refresh(new_inc)
@@ -389,19 +392,20 @@ class ViolenceDetectorService:
                 new_alert = Alert(incident_id=incident_id, message=msg)
                 db.add(new_alert)
                 db.commit()
-                return incident_id, is_new_incident
+                return incident_id, is_new_incident, cam_location
             except Exception as e:
                 print(f"DB Error creating alert: {e}")
-                return None, False
+                return None, False, "Unknown"
             finally:
                 if not self.db:
                     db.close()
                     
         db_res = await asyncio.to_thread(db_logic)
         incident_id = None
+        cam_location = "Unknown"
         
         if db_res:
-            incident_id, is_new_incident = db_res
+            incident_id, is_new_incident, cam_location = db_res
             if is_new_incident:
                 session = self.get_session(camera_id)
                 if getattr(session, 'video_writer', None) is None:
@@ -433,7 +437,9 @@ class ViolenceDetectorService:
             "weapon_score": float(weapon_score),
             "weapon_name": weapon_name,
             "fight_score": float(fight_score),
-            "audio_score": float(audio_score)
+            "audio_score": float(audio_score),
+            "audio_name": audio_name,
+            "camera_location": cam_location
         }
 
         # print(f"Broadcasting Alert: {alert_data}")

@@ -63,12 +63,17 @@ def process_task():
                     
             # 3. Audio Analysis
             scream_conf = 0.0
+            scream_name = None
             audio_emb = None
             if len(audio_buffer) >= 16000:
                 try:
                     waveform = np.array(audio_buffer[-16000:], dtype=np.float32)
                     audio_res, audio_emb_out = audio.predict(waveform)
-                    scream_conf = max([d['score'] for d in audio_res if d['is_violent']], default=0.0)
+                    violent_audios = [d for d in audio_res if d['is_violent']]
+                    if violent_audios:
+                        top_audio = max(violent_audios, key=lambda x: x['score'])
+                        scream_conf = top_audio['score']
+                        scream_name = top_audio['class']
                     audio_emb = audio_emb_out
                 except Exception as e:
                     print(f"Audio detection failed: {e}")
@@ -84,7 +89,8 @@ def process_task():
                 'weapon_conf': weapon_conf,
                 'weapon_name': weapon_name,
                 'fight_conf': fight_conf,
-                'scream_conf': scream_conf
+                'scream_conf': scream_conf,
+                'scream_name': scream_name
             }
             redis_client.lpush('inference_results', pickle.dumps(res_data))
             

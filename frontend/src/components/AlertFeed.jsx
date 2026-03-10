@@ -53,12 +53,18 @@ function AlertCard({ alert }) {
           {new Date(alert.timestamp).toLocaleTimeString()}
         </span>
       </div>
-      <p className="text-slate-300 text-sm mt-1">{alert.message}</p>
       <div className="mt-2 text-xs text-slate-400 flex flex-col gap-1">
-        <div className="flex justify-between border-b border-slate-700 pb-1 mb-1">
-          <span>Weapon: {(alert.weapon_score || 0).toFixed(2)}</span>
-          <span>Fight: {(alert.fight_score || 0).toFixed(2)}</span>
-          <span>Audio: {(alert.audio_score || 0).toFixed(2)}</span>
+        <div className="flex flex-col gap-1 border-b border-slate-700 pb-2 mb-1">
+          <div className="flex justify-between">
+            <span>Weapon: {alert.weapon_name || "None"}</span>
+            <span className={alert.fight_score > 0.3 ? "text-red-400" : "text-slate-400"}>
+              Fight: {alert.fight_score > 0.3 ? "Fight" : "Non-fight"}
+            </span>
+            <span>Audio: {alert.audio_name || "None"}</span>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span>Location: {alert.camera_location || "Unknown"}</span>
+          </div>
         </div>
         <div className="flex justify-between items-center mt-1">
           <span className="text-slate-500">Cam ID: {alert.camera_id}</span>
