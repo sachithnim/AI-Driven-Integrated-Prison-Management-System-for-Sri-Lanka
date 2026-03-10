@@ -22,6 +22,17 @@ class FusionMLP(nn.Module):
         
         self.classes = ['Low', 'Medium', 'High']
 
+        import os
+        model_path = 'ml_models/fusion_weights.pt'
+        if os.path.exists(model_path):
+            print(f"Loading Fusion model weights from {model_path}...")
+            try:
+                self.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+            except Exception as e:
+                print(f"Could not load fusion weights: {e}")
+        else:
+            print(f"Fusion model weights not found at {model_path}. Using random initialization.")
+
     def forward(self, weapon, fight, audio_emb):
         x = torch.cat([weapon, fight, audio_emb], dim=1)
         

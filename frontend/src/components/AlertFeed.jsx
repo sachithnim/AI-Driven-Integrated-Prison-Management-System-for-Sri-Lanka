@@ -14,7 +14,7 @@ export default function AlertFeed() {
   useEffect(() => {
     if (lastMessage !== null) {
       const newAlert = JSON.parse(lastMessage.data);
-      setAlerts((prev) => [newAlert, ...prev].slice(0, 50)); // Keep last 50
+      setAlerts([newAlert]); // Keep only the latest 1 alert
     }
   }, [lastMessage]);
   return (
