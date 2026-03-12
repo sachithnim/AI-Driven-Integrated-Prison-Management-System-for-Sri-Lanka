@@ -65,6 +65,43 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/ai-api/, ''),
       },
+      // ── Violation Service (8003) — specific paths before generic /api/v1 ──
+      '/api/v1/cameras': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/incidents': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/reports': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/ws': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/api/v1/start-stream': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/video_feed': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/static/incidents': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+      },
       // ── Rehabilitation AI (8001) via /api/v1 direct ───────────────────────
       '/api/v1': {
         target: 'http://localhost:8001',
@@ -77,7 +114,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-
+    }
+  },
 //   plugins: [react()],
 //   server: {
 //     host: '0.0.0.0',
@@ -86,6 +124,7 @@ export default defineConfig({
 //     watch: {
 //       usePolling: true,
 //     },
-//   },
+  
 })
+
 

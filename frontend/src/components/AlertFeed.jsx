@@ -92,7 +92,7 @@ function AlertCard({ alert }) {
                   controls
                   autoPlay
                   className="w-full"
-                  src={`http://localhost:8003/static/incidents/incident_${alert.incident_id}.webm`}
+                  src={`/static/incidents/incident_${alert.incident_id}.webm`}
                 >
                   Your browser does not support the video tag.
                 </video>

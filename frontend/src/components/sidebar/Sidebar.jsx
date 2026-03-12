@@ -22,7 +22,7 @@ import {
   Grid3x3,
   ShieldAlert,
   Home,
-  Building2
+  Building2,
   FolderOpen,
   History,
   HeartPulse,

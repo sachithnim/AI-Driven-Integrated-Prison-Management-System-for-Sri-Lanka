@@ -49,7 +49,7 @@ export default function CCTVGrid() {
 
   const fetchCameras = async () => {
     try {
-      const resp = await fetch("http://localhost:8003/api/v1/cameras/");
+      const resp = await fetch("/api/v1/cameras/");
       if (resp.ok) {
         const data = await resp.json();
         const sorted = data.sort((a, b) =>
@@ -123,8 +123,9 @@ export default function CCTVGrid() {
     setIsConnecting(true);
 
     try {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(
-        `ws://localhost:8003/api/v1/ws/live/${primaryCamera.id}`,
+        `${wsProtocol}//${window.location.host}/api/v1/ws/live/${primaryCamera.id}`,
       );
       ws.binaryType = "arraybuffer";
 

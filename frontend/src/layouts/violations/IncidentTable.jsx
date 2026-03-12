@@ -20,7 +20,7 @@ export default function IncidentTable() {
 
   const fetchCameras = async () => {
     try {
-      const response = await fetch("http://localhost:8003/api/v1/cameras/");
+      const response = await fetch("/api/v1/cameras/");
       if (response.ok) {
         const data = await response.json();
         const cameraMap = {};
@@ -37,7 +37,7 @@ export default function IncidentTable() {
   const fetchIncidents = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8003/api/v1/incidents/?limit=20",
+        "/api/v1/incidents/?limit=20",
       );
       if (response.ok) {
         const data = await response.json();
@@ -175,7 +175,7 @@ export default function IncidentTable() {
                               controls
                               autoPlay
                               className="w-full aspect-video object-contain"
-                              src={`http://localhost:8003${incident.video_path}`}
+                              src={incident.video_path}
                             >
                               Your browser does not support the video tag.
                             </video>
