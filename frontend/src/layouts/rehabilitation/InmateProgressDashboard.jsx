@@ -459,17 +459,17 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
               {/* Overall readiness banner */}
               {(data.predictions.overall_readiness_score ?? data.predictions.overallReadinessScore) != null && (
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white flex items-center justify-between">
-                  <div>
+                  {/* <div>
                     <p className="text-purple-200 text-xs">Overall Readiness Score</p>
                     <p className="text-3xl font-bold mt-0.5">
                       {Math.round((data.predictions.overall_readiness_score ?? data.predictions.overallReadinessScore) * 100)}%
                     </p>
-                  </div>
-                  {data.predictions.priority_recommendation && (
+                  </div> */}
+                  {/* {data.predictions.priority_recommendation && (
                     <p className="text-sm text-purple-100 max-w-xs text-right">
                       {data.predictions.priority_recommendation}
                     </p>
-                  )}
+                  )} */}
                 </div>
               )}
 

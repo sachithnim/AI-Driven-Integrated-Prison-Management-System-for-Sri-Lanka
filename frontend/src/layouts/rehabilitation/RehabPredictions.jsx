@@ -387,24 +387,24 @@ export default function RehabPredictions() {
       {result && (
         <div className="space-y-5">
           {/* Overall readiness */}
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
+          {/* <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white"> */}
+            {/* <div className="flex items-center justify-between"> */}
+              {/* <div>
                 <p className="text-purple-200 text-sm">Overall Readiness Score</p>
                 <p className="text-4xl font-bold mt-1">
                   {Math.round((result.overall_readiness_score ?? result.overallReadinessScore ?? 0) * 100)}%
                 </p>
-              </div>
-              <div className="text-right">
+              </div> */}
+              {/* <div className="text-right">
                 <Star className="w-10 h-10 text-yellow-300 ml-auto mb-2" />
                 {result.priority_recommendation && (
                   <p className="text-sm text-purple-100 max-w-xs text-right">
                     {result.priority_recommendation}
                   </p>
                 )}
-              </div>
-            </div>
-          </div>
+              </div> */}
+            {/* </div> */}
+          {/* </div> */}
 
           {/* Prediction cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

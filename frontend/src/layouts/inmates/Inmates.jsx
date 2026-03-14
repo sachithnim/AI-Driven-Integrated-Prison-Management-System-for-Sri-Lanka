@@ -189,19 +189,20 @@ export default function Inmates() {
             )}
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8">
-                        <div className="flex justify-between items-center mb-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto p-4 md:p-6">
+                    <div className="bg-white rounded-lg w-full max-w-2xl mx-auto my-4 max-h-[90vh] flex flex-col">
+                        <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
                             <h2 className="text-xl font-bold">Register New Inmate</h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                        <div className="overflow-y-auto px-6 pb-6">
+                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">Booking Number</label>
                                 <input type="text" name="bookingNumber" value={formData.bookingNumber} onChange={handleInputChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-                            </div>
+                            </div> */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">First Name</label>
                                 <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
@@ -476,6 +477,7 @@ export default function Inmates() {
                                 </button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             )}
