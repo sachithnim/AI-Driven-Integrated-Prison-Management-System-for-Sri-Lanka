@@ -29,7 +29,8 @@ export default function CCTVGrid() {
 
   // Hidden references for processing the stream to the backend
   const canvasRef = useRef(null);
-  const wsRef = useRef(null);
+  const wsRefs = useRef({});
+  const processingIntervalRef = useRef(null);
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
 
@@ -44,8 +45,46 @@ export default function CCTVGrid() {
     }
 
     // Cleanup on unmount
-    return () => stopAiDetection();
+    return () => {
+        stopAiDetection();
+        Object.values(wsRefs.current).forEach(ws => {
+           if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+               ws.close();
+           }
+        });
+    };
   }, [videoRef]);
+
+  // Handle WebSocket connections dynamically based on active cameras
+  useEffect(() => {
+    if (!isAiActive) {
+      Object.values(wsRefs.current).forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+      });
+      wsRefs.current = {};
+      return;
+    }
+
+    cameras.forEach(camera => {
+      const isCamOn = activeCameras[camera.id] !== false;
+      const currentWs = wsRefs.current[camera.id];
+
+      if (isCamOn && (!currentWs || currentWs.readyState === WebSocket.CLOSED)) {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/api/v1/ws/live/${camera.id}`);
+        ws.binaryType = "arraybuffer";
+        ws.onopen = () => console.log(`WebSocket Connected for Camera ${camera.id}`);
+        ws.onerror = (e) => console.error(`WS Error for Camera ${camera.id}`, e);
+        ws.onclose = () => console.log(`WebSocket Disconnected for Camera ${camera.id}`);
+        wsRefs.current[camera.id] = ws;
+      } else if (!isCamOn && currentWs) {
+        currentWs.close();
+        delete wsRefs.current[camera.id];
+      }
+    });
+  }, [activeCameras, isAiActive, cameras]);
 
   const fetchCameras = async () => {
     try {
@@ -84,9 +123,6 @@ export default function CCTVGrid() {
       return;
     }
 
-    // We bind AI to the first configured camera for this local simulation
-    const primaryCamera = cameras[0];
-
     // Auto-request camera permissions if the CameraContext feed isn't playing yet
     let stream = null;
     if (videoRef.current && videoRef.current.srcObject) {
@@ -121,48 +157,20 @@ export default function CCTVGrid() {
     }
 
     setIsConnecting(true);
-
-    try {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(
-        `${wsProtocol}//${window.location.host}/api/v1/ws/live/${primaryCamera.id}`,
-      );
-      ws.binaryType = "arraybuffer";
-
-      ws.onopen = () => {
-        console.log("WebSocket Connected. Starting stream processing...");
-        setIsAiActive(true);
-        setIsConnecting(false);
-        startProcessing(stream, ws);
-      };
-
-      ws.onerror = (e) => {
-        console.error("WS Error", e);
-        alert(
-          "WebSocket connection error. Make sure the violation-service is running.",
-        );
-        setIsConnecting(false);
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket Disconnected");
-        if (isAiActive) {
-          stopAiDetection();
-        }
-      };
-
-      wsRef.current = ws;
-    } catch (err) {
-      console.error("Error connecting to backend:", err);
-      setIsConnecting(false);
-    }
+    // The useEffect will handle opening the actual WebSockets
+    setIsAiActive(true);
+    setIsConnecting(false);
+    startProcessing(stream);
   };
 
-  const startProcessing = (stream, ws) => {
+  const startProcessing = (stream) => {
+    if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+    }
+
     // 1. Video Processing Loop
-    const interval = setInterval(() => {
+    processingIntervalRef.current = setInterval(() => {
       if (
-        ws.readyState === WebSocket.OPEN &&
         canvasRef.current &&
         videoRef.current
       ) {
@@ -178,7 +186,12 @@ export default function CCTVGrid() {
                 const packet = new Uint8Array(header.length + payload.length);
                 packet.set(header, 0);
                 packet.set(payload, header.length);
-                ws.send(packet);
+                
+                Object.values(wsRefs.current).forEach(ws => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(packet);
+                    }
+                });
               });
             }
           },
@@ -198,7 +211,6 @@ export default function CCTVGrid() {
     const processor = audioCtx.createScriptProcessor(4096, 1, 1);
 
     processor.onaudioprocess = (e) => {
-      if (ws.readyState === WebSocket.OPEN) {
         const inputData = e.inputBuffer.getChannelData(0);
         const pcmData = new Int16Array(inputData.length);
         for (let i = 0; i < inputData.length; i++) {
@@ -211,8 +223,12 @@ export default function CCTVGrid() {
         const packet = new Uint8Array(header.length + payload.length);
         packet.set(header, 0);
         packet.set(payload, header.length);
-        ws.send(packet);
-      }
+        
+        Object.values(wsRefs.current).forEach(ws => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(packet);
+            }
+        });
     };
 
     source.connect(processor);
@@ -221,11 +237,19 @@ export default function CCTVGrid() {
   };
 
   const stopAiDetection = () => {
-    if (wsRef.current) wsRef.current.close();
+    setIsAiActive(false);
+
+    if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+        processingIntervalRef.current = null;
+    }
+    if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current = null;
+    }
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       audioContextRef.current.close().catch(console.error);
     }
-    setIsAiActive(false);
   };
 
   // Determine grid layout based on camera count and whether AI side panel is open
