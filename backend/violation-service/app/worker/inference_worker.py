@@ -4,6 +4,7 @@ import time
 import numpy as np
 import asyncio
 import nest_asyncio
+from collections import deque
 
 # To avoid "Event loop is already running" if models use threads/asyncio internally in a strange way
 nest_asyncio.apply()
@@ -23,6 +24,41 @@ import os
 redis_host = os.environ.get('REDIS_HOST', 'localhost')
 redis_client = redis.Redis(host=redis_host, port=6379, db=0)
 print("Worker connected to Redis.")
+
+# Per-camera audio temporal smoothing state
+# Keeps the last N audio confidence scores to smooth out flickering detections
+audio_history = {}  # camera_id -> deque of (scream_conf, scream_name)
+AUDIO_SMOOTH_WINDOW = 5  # Number of recent frames to average over
+
+def get_smoothed_audio(camera_id, raw_conf, raw_name):
+    """
+    Apply temporal smoothing to audio detections.
+    Returns (smoothed_conf, best_name) — averaged confidence and the
+    class name associated with the highest recent detection.
+    """
+    if camera_id not in audio_history:
+        audio_history[camera_id] = deque(maxlen=AUDIO_SMOOTH_WINDOW)
+    
+    audio_history[camera_id].append((raw_conf, raw_name))
+    
+    history = audio_history[camera_id]
+    
+    # Smoothed confidence = average of recent scores
+    avg_conf = sum(h[0] for h in history) / len(history)
+    
+    # Best name = name from the frame with the highest confidence in the window
+    best_entry = max(history, key=lambda h: h[0])
+    best_name = best_entry[1]
+    
+    # If smoothed conf is above threshold but raw_name is None, use historical best
+    if avg_conf > 0.15 and best_name is None:
+        # Find any non-None name in recent history
+        for h in sorted(history, key=lambda x: x[0], reverse=True):
+            if h[1] is not None:
+                best_name = h[1]
+                break
+    
+    return avg_conf, best_name
 
 def process_task():
     while True:
@@ -61,13 +97,16 @@ def process_task():
                 except Exception as e:
                     print(f"Action recognition failed: {e}")
                     
-            # 3. Audio Analysis
+            # 3. Audio Analysis — Use up to 3 seconds (48000 samples) for better context
             scream_conf = 0.0
             scream_name = None
             audio_emb = None
-            if len(audio_buffer) >= 16000:
+            # Require at least 0.5s (8000 samples) of audio, prefer 3s (48000)
+            if len(audio_buffer) >= 8000:
                 try:
-                    waveform = np.array(audio_buffer[-16000:], dtype=np.float32)
+                    # Use up to 3 seconds of audio for better classification
+                    num_samples = min(len(audio_buffer), 48000)
+                    waveform = np.array(list(audio_buffer)[-num_samples:], dtype=np.float32)
                     audio_res, audio_emb_out = audio.predict(waveform)
                     violent_audios = [d for d in audio_res if d['is_violent']]
                     if violent_audios:
@@ -77,6 +116,9 @@ def process_task():
                     audio_emb = audio_emb_out
                 except Exception as e:
                     print(f"Audio detection failed: {e}")
+            
+            # Apply audio temporal smoothing
+            scream_conf, scream_name = get_smoothed_audio(camera_id, scream_conf, scream_name)
                     
             # 4. Fusion
             alert_level, confidence = fusion.predict(weapon_conf, fight_conf, audio_emb, scream_conf)

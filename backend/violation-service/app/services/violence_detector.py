@@ -106,6 +106,19 @@ class ViolenceDetectorService:
                     smoothed_val = int(round(sum(session.alert_history) / len(session.alert_history)))
                     alert_level = idx_map[smoothed_val]
                     
+                    # Audio name persistence — keep the detected sound name
+                    # visible across cycles so it doesn't disappear instantly
+                    raw_scream_name = res.get('scream_name')
+                    raw_scream_conf = res.get('scream_conf', 0.0)
+                    
+                    if not hasattr(session, 'audio_name_history'):
+                        session.audio_name_history = deque(maxlen=8)
+                    session.audio_name_history.append((raw_scream_conf, raw_scream_name))
+                    
+                    # Use the best (highest confidence) audio name from recent history
+                    best_audio = max(session.audio_name_history, key=lambda x: x[0])
+                    effective_scream_name = best_audio[1] if best_audio[0] > 0.1 else raw_scream_name
+                    
                     if alert_level in ['Medium', 'High']:
                         await self._create_alert(
                             camera_id, 
@@ -114,7 +127,7 @@ class ViolenceDetectorService:
                             res.get('fight_conf', 0.0), 
                             res.get('scream_conf', 0.0), 
                             res.get('weapon_name'),
-                            res.get('scream_name')
+                            effective_scream_name
                         )
             except Exception as e:
                 print(f"Redis listener error: {e}")
