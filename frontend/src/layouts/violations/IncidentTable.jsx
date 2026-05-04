@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Video,
   ChevronDown,
   ChevronUp,
   Clock,
   AlertTriangle,
+  Search,
+  CalendarDays,
+  Filter,
+  X,
+  RefreshCw,
 } from "lucide-react";
 
 export default function IncidentTable() {
@@ -12,6 +17,12 @@ export default function IncidentTable() {
   const [cameras, setCameras] = useState({});
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("");
 
   useEffect(() => {
     fetchCameras();
@@ -34,18 +45,21 @@ export default function IncidentTable() {
     }
   };
 
-  const fetchIncidents = async () => {
+  const fetchIncidents = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch(
-        "/api/v1/incidents/?limit=20",
-      );
+      const params = new URLSearchParams();
+      params.set("limit", "100");
+
+      if (dateFrom) params.set("date_from", dateFrom);
+      if (dateTo) params.set("date_to", dateTo);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (severityFilter) params.set("severity", severityFilter);
+
+      const response = await fetch(`/api/v1/incidents/?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        // Sort descending by timestamp assuming backend doesn't
-        const sorted = data.sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
-        );
-        setIncidents(sorted);
+        setIncidents(data);
       } else {
         console.error("Failed to fetch incidents");
       }
@@ -54,7 +68,25 @@ export default function IncidentTable() {
     } finally {
       setLoading(false);
     }
+  }, [dateFrom, dateTo, searchQuery, severityFilter]);
+
+  // Re-fetch when filters change (with debounce for search)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchIncidents();
+    }, searchQuery ? 400 : 0); // Debounce search input
+
+    return () => clearTimeout(timeout);
+  }, [dateFrom, dateTo, severityFilter, searchQuery, fetchIncidents]);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setDateFrom("");
+    setDateTo("");
+    setSeverityFilter("");
   };
+
+  const hasActiveFilters = searchQuery || dateFrom || dateTo || severityFilter;
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -69,18 +101,131 @@ export default function IncidentTable() {
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden mt-8">
-      <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <AlertTriangle className="text-red-500" /> Recent Incidents Logging
-        </h2>
-        <button
-          onClick={fetchIncidents}
-          className="text-sm bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-1.5 px-3 rounded shadow-sm transition-colors"
-        >
-          Refresh List
-        </button>
+      {/* Header */}
+      <div className="p-5 border-b border-slate-200 bg-slate-50">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <AlertTriangle className="text-red-500" /> Incident Logs
+          </h2>
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 text-sm bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 py-1.5 px-3 rounded-lg shadow-sm transition-colors"
+              >
+                <X size={14} /> Clear Filters
+              </button>
+            )}
+            <button
+              onClick={fetchIncidents}
+              className="flex items-center gap-1.5 text-sm bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg shadow-sm transition-colors"
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap items-end gap-3">
+          {/* Search */}
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              Search
+            </label>
+            <div className="relative">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Search by description, type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          {/* Date From */}
+          <div className="min-w-[160px]">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <CalendarDays size={12} className="inline mr-1" />
+              From
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+            />
+          </div>
+
+          {/* Date To */}
+          <div className="min-w-[160px]">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <CalendarDays size={12} className="inline mr-1" />
+              To
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+            />
+          </div>
+
+          {/* Severity Filter */}
+          <div className="min-w-[140px]">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <Filter size={12} className="inline mr-1" />
+              Severity
+            </label>
+            <select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm appearance-none cursor-pointer"
+            >
+              <option value="">All</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Active filter summary */}
+        {hasActiveFilters && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+            <Filter size={12} />
+            <span>
+              Showing {loading ? "..." : incidents.length} results
+              {searchQuery && (
+                <span className="ml-1">
+                  matching "<strong>{searchQuery}</strong>"
+                </span>
+              )}
+              {dateFrom && (
+                <span className="ml-1">
+                  from <strong>{dateFrom}</strong>
+                </span>
+              )}
+              {dateTo && (
+                <span className="ml-1">
+                  to <strong>{dateTo}</strong>
+                </span>
+              )}
+              {severityFilter && (
+                <span className="ml-1">
+                  • severity: <strong>{severityFilter}</strong>
+                </span>
+              )}
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -97,13 +242,18 @@ export default function IncidentTable() {
             {loading ? (
               <tr>
                 <td colSpan="6" className="p-8 text-center text-slate-500">
-                  Loading incidents...
+                  <div className="flex items-center justify-center gap-2">
+                    <RefreshCw size={16} className="animate-spin" />
+                    Loading incidents...
+                  </div>
                 </td>
               </tr>
             ) : incidents.length === 0 ? (
               <tr>
                 <td colSpan="6" className="p-8 text-center text-slate-500">
-                  No localized incidents found in the database.
+                  {hasActiveFilters
+                    ? "No incidents match the current filters."
+                    : "No incidents found in the database."}
                 </td>
               </tr>
             ) : (

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List, Any, Optional
 from app.db import models, base
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 
 router = APIRouter()
 
@@ -27,11 +27,38 @@ def read_incidents(
     db: Session = Depends(base.get_db),
     skip: int = 0,
     limit: int = 100,
+    date_from: Optional[date] = Query(None, description="Filter incidents from this date (inclusive)"),
+    date_to: Optional[date] = Query(None, description="Filter incidents up to this date (inclusive)"),
+    search: Optional[str] = Query(None, description="Search in description, type, or severity"),
+    severity: Optional[str] = Query(None, description="Filter by severity: Low, Medium, High"),
 ):
     """
-    Retrieve incidents.
+    Retrieve incidents with optional date range, search, and severity filters.
     """
-    incidents = db.query(models.Incident).offset(skip).limit(limit).all()
+    query = db.query(models.Incident)
+
+    # Date range filtering
+    if date_from:
+        query = query.filter(models.Incident.timestamp >= datetime.combine(date_from, datetime.min.time()))
+    if date_to:
+        query = query.filter(models.Incident.timestamp <= datetime.combine(date_to, datetime.max.time()))
+
+    # Severity filter
+    if severity:
+        query = query.filter(models.Incident.severity == severity)
+
+    # Text search across description, type
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            models.Incident.description.ilike(search_pattern) |
+            models.Incident.type.ilike(search_pattern)
+        )
+
+    # Order by newest first
+    query = query.order_by(models.Incident.timestamp.desc())
+
+    incidents = query.offset(skip).limit(limit).all()
     return incidents
 
 @router.post("/", response_model=IncidentOut)
