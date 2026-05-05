@@ -391,6 +391,7 @@ public class RehabilitationService {
         List<EligibilityAssessment> eligibilityHistory =
                 eligibilityAssessmentRepository.findByInmateIdOrderByAssessedAtAsc(inmateId);
         List<Recommendation> recommendations = recommendationRepository.findByInmateId(inmateId);
+        List<MedicalReport> medicalReports = medicalReportRepository.findByInmateId(inmateId);
 
         // Profile base scores
         RehabProfile profile = profileRepository.findByInmateId(inmateId).orElse(null);
@@ -454,12 +455,40 @@ public class RehabilitationService {
         long programsCompleted = recommendations.stream()
                 .filter(r -> r.getStatus() == RecommendationStatus.COMPLETED).count();
 
-        // Composite overall score (weighted average of 5 dimensions)
-        double overallScore = (behaviorScore * 0.25)
+        // Medical trend — each report is scored based on how positive the diagnosis is
+        // Reports with no concerning diagnosis get 80, otherwise 50 as a baseline
+        List<Map<String, Object>> medicalTrend = medicalReports.stream()
+                .filter(r -> r.getReportDate() != null)
+                .sorted(Comparator.comparing(MedicalReport::getReportDate))
+                .map(r -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("date", r.getReportDate().format(fmt));
+                    m.put("diagnosis", r.getDiagnosis());
+                    m.put("officerId", r.getOfficerId());
+                    // Score medical compliance: having a report means engagement
+                    // Base score 70, then adjust up/down based on report content
+                    int score = 70;
+                    if (r.getNotes() != null && r.getNotes().length() > 50) score += 10; // detailed notes = good
+                    if (r.getVitals() != null && !r.getVitals().isEmpty()) score += 10; // vitals recorded = good
+                    if (r.getDiagnosis() != null && r.getDiagnosis().toLowerCase().contains("stable")) score += 10;
+                    m.put("score", Math.min(100, score));
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        // Medical score: 0 reports = 0, having reports increases score (engagement-based)
+        double medicalEngagementScore = medicalReports.isEmpty() ? 0.0 :
+                medicalTrend.stream()
+                        .mapToInt(m -> (Integer) m.get("score"))
+                        .average().orElse(0.0);
+
+        // Composite overall score (weighted average of 6 dimensions)
+        double overallScore = (behaviorScore * 0.20)
                 + (avgCounseling * 0.20)
-                + (avgProgramProgress * 0.25)
-                + (latestEligScore * 0.20)
-                + ((1.0 - riskRaw) * 100.0 * 0.10);
+                + (avgProgramProgress * 0.20)
+                + (latestEligScore * 0.15)
+                + ((1.0 - riskRaw) * 100.0 * 0.10)
+                + (medicalEngagementScore * 0.15);
 
         return ProgressSummaryDTO.builder()
                 .inmateId(inmateId)
@@ -469,12 +498,15 @@ public class RehabilitationService {
                 .programProgressScore(Math.min(100.0, Math.round(avgProgramProgress * 10.0) / 10.0))
                 .eligibilityScore(Math.min(100.0, Math.round(latestEligScore * 10.0) / 10.0))
                 .riskScore(Math.min(100.0, Math.round((1.0 - riskRaw) * 100.0 * 10.0) / 10.0))
+                .medicalScore(Math.min(100.0, Math.round(medicalEngagementScore * 10.0) / 10.0))
                 .progressTrend(progressTrend)
                 .counselingTrend(counselingTrend)
                 .eligibilityTrend(eligibilityTrend)
+                .medicalTrend(medicalTrend)
                 .totalCounselingSessions(counselingSessions.size())
                 .totalProgressLogs(progressLogs.size())
                 .totalEligibilityAssessments(eligibilityHistory.size())
+                .totalMedicalReports(medicalReports.size())
                 .programsCompleted((int) programsCompleted)
                 .currentlyEligible(latest != null && Boolean.TRUE.equals(latest.getEligible()))
                 .latestReasonExplainer(latest != null ? latest.getReasoning() : null)
@@ -583,7 +615,26 @@ public class RehabilitationService {
     }
     
     private void updateProfileFromMedicalReport(String inmateId) {
-        log.info("Profile update triggered for inmate: {} from medical report", inmateId);
+        try {
+            RehabProfile profile = profileRepository.findByInmateId(inmateId).orElse(null);
+            if (profile == null) {
+                log.info("No rehab profile for inmate {} — skipping medical report profile update", inmateId);
+                return;
+            }
+            List<MedicalReport> reports = medicalReportRepository.findByInmateId(inmateId);
+            profile.setLastUpdated(LocalDateTime.now());
+            // Update factor values — medical engagement improves health-related factors
+            Map<String, Double> factors = profile.getFactorValues() != null
+                    ? new HashMap<>(profile.getFactorValues()) : new HashMap<>();
+            // Each medical report improves the medical compliance factor (capped at 1.0)
+            double medicalCompliance = Math.min(1.0, reports.size() * 0.15);
+            factors.put("medical_compliance", medicalCompliance);
+            profile.setFactorValues(factors);
+            profileRepository.save(profile);
+            log.info("Updated profile for inmate {} from medical report (total reports: {})", inmateId, reports.size());
+        } catch (Exception e) {
+            log.warn("Could not update profile from medical report for {}: {}", inmateId, e.getMessage());
+        }
     }
 
     // ── Factor value helpers ────────────────────────────────────────────────────

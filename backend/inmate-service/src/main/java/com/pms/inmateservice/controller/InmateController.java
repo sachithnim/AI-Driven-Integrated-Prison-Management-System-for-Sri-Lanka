@@ -1,17 +1,24 @@
 package com.pms.inmateservice.controller;
 
 import com.pms.inmateservice.dto.*;
+import com.pms.inmateservice.service.ImageAnalysisService;
 import com.pms.inmateservice.service.InmateService;
+import com.pms.inmateservice.service.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/inmates")
@@ -21,6 +28,8 @@ import java.util.List;
 public class InmateController {
 
     private final InmateService inmateService;
+    private final ImageUploadService imageUploadService;
+    private final ImageAnalysisService imageAnalysisService;
 
     @PostMapping
     @Operation(summary = "Create new inmate", description = "Register a new inmate in the system")
@@ -80,6 +89,14 @@ public class InmateController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/run-ai-assessment")
+    @Operation(summary = "Run AI Initial Assessment", description = "Explicitly run the AI scoring for behavior, discipline, and risk to update pending scores")
+    public ResponseEntity<InmateResponseDTO> runAiInitialAssessment(@PathVariable Long id) {
+        log.info("REST request to run AI initial assessment for inmate ID: {}", id);
+        InmateResponseDTO response = inmateService.runAiInitialAssessment(id);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{id}/release")
     @Operation(summary = "Release inmate", description = "Mark an inmate as released")
     public ResponseEntity<InmateResponseDTO> releaseInmate(@PathVariable Long id) {
@@ -124,6 +141,98 @@ public class InmateController {
         log.info("REST request to get high-risk inmates");
         List<InmateResponseDTO> inmates = inmateService.getHighRiskInmates();
         return ResponseEntity.ok(inmates);
+    }
+
+    @PostMapping(value = "/extract-physical-description", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Extract physical description from images", description = "Use AI to infer physical description fields from close face and full body photos")
+    public ResponseEntity<PhysicalDescriptionAnalysisDTO> extractPhysicalDescription(
+            @RequestParam(value = "closeFaceImage", required = false) MultipartFile closeFaceImage,
+            @RequestParam(value = "fullBodyImage", required = false) MultipartFile fullBodyImage) {
+        log.info("REST request to extract physical description from inmate images");
+        PhysicalDescriptionAnalysisDTO analysis = imageAnalysisService.extractPhysicalDescription(closeFaceImage, fullBodyImage);
+        return ResponseEntity.ok(analysis);
+    }
+
+    @PostMapping("/{id}/upload-image")
+    @Operation(summary = "Upload inmate image", description = "Upload close face or full body image for an inmate")
+    public ResponseEntity<Map<String, String>> uploadImage(
+            @PathVariable Long id,
+            @RequestParam MultipartFile file,
+            @RequestParam String imageType) {
+        try {
+            log.info("REST request to upload {} image for inmate: {}", imageType, id);
+            String imagePath = imageUploadService.uploadImage(file, id, imageType);
+            inmateService.updateInmateImage(id, imageType, imagePath);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Image uploaded successfully");
+            response.put("imagePath", imagePath);
+            response.put("imageType", imageType);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (IOException e) {
+            log.error("Error uploading image", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to upload image: " + e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/{id}/image/{imageType}")
+    @Operation(summary = "Get inmate image", description = "Retrieve close face or full body image for an inmate")
+    public ResponseEntity<byte[]> getImage(@PathVariable Long id, @PathVariable String imageType) {
+        try {
+            log.info("REST request to get {} image for inmate: {}", imageType, id);
+            InmateResponseDTO inmate = inmateService.getInmateById(id);
+            String imagePath = null;
+            
+            if ("closeFace".equals(imageType)) {
+                imagePath = inmate.getCloseFaceImagePath();
+            } else if ("fullBody".equals(imageType)) {
+                imagePath = inmate.getFullBodyImagePath();
+            }
+            
+            if (imagePath == null || imagePath.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            byte[] imageData = imageUploadService.getImage(imagePath);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "image/jpeg")
+                    .body(imageData);
+        } catch (IOException e) {
+            log.error("Error retrieving image", e);
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}/image/{imageType}")
+    @Operation(summary = "Delete inmate image", description = "Delete close face or full body image for an inmate")
+    public ResponseEntity<Map<String, String>> deleteImage(@PathVariable Long id, @PathVariable String imageType) {
+        try {
+            log.info("REST request to delete {} image for inmate: {}", imageType, id);
+            InmateResponseDTO inmate = inmateService.getInmateById(id);
+            String imagePath = null;
+            
+            if ("closeFace".equals(imageType)) {
+                imagePath = inmate.getCloseFaceImagePath();
+            } else if ("fullBody".equals(imageType)) {
+                imagePath = inmate.getFullBodyImagePath();
+            }
+            
+            if (imagePath != null && !imagePath.isEmpty()) {
+                imageUploadService.deleteImage(imagePath);
+                inmateService.updateInmateImage(id, imageType, null);
+            }
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Image deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            log.error("Error deleting image", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to delete image: " + e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @ExceptionHandler(RuntimeException.class)

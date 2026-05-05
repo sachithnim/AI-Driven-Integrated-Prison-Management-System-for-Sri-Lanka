@@ -162,6 +162,7 @@ export default function Rehabilitation() {
   const [dynamicLoading, setDynamicLoading] = useState(false);
   const [showFactorPanel, setShowFactorPanel] = useState(true); // always expanded
   const [generatingFactors, setGeneratingFactors] = useState(false);
+  const [hasActiveProfile, setHasActiveProfile] = useState(false);
   const [allInmates, setAllInmates] = useState([]);
   const [skippedCount, setSkippedCount] = useState(0);
   const [selectedPrisonType, setSelectedPrisonType] = useState("");
@@ -490,20 +491,38 @@ export default function Rehabilitation() {
                     const id = e.target.value;
                     setDynamicInmateId(id);
                     setDynamicResult(null);
+                    setHasActiveProfile(false);
                     if (!id) return;
-                    // Step 1: Try to load existing profile factor values
+                    
+                    // Step 1: Check if the inmate already has an active rehab profile
                     try {
                       const profile = await BackendRehabService.getProfile(id);
-                      if (profile?.factorValues && Object.keys(profile.factorValues).length > 0) {
-                        setFactorValues(profile.factorValues);
-                        return; // already have saved values
+                      if (profile && profile.inmateId) {
+                        setHasActiveProfile(true);
+                        // If they have factor values saved, we can optionally load them to view
+                        if (profile.factorValues && Object.keys(profile.factorValues).length > 0) {
+                          setFactorValues(profile.factorValues);
+                        }
+                        return; // Stop here, they are already enrolled
                       }
                     } catch {
                       // No existing profile — fall through to AI generation
+                      setHasActiveProfile(false);
                     }
-                    // Step 2: Auto-generate factor values via AI from inmate data
-                    const inmate = allInmates.find((i) => String(i.id) === String(id));
+                    
+                    // Step 1.5: Check if the inmate needs an initial AI assessment (e.g. from registration)
+                    let inmate = allInmates.find((i) => String(i.id) === String(id));
                     if (!inmate) return;
+
+                    if (inmate.aiReasoning === "Pending AI Assessment") {
+                      try {
+                        setGeneratingFactors(true);
+                        inmate = await InmateService.runAiAssessment(id);
+                        setAllInmates(prev => prev.map(i => String(i.id) === String(id) ? inmate : i));
+                      } catch (err) {
+                        console.warn("Initial AI assessment failed:", err);
+                      }
+                    }
                     try {
                       setGeneratingFactors(true);
                       const payload = buildSuggestPayload(inmate);
@@ -530,32 +549,49 @@ export default function Rehabilitation() {
                   ))}
                 </select>
               </div>
-              <button
-                onClick={handleDynamicAssess}
-                disabled={dynamicLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium"
-              >
-                {dynamicLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                Run Assessment
-              </button>
+              {hasActiveProfile ? (
+                <button
+                  onClick={() => window.location.href = `/rehabilitation/progress?inmateId=${dynamicInmateId}`}
+                  className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                >
+                  <View className="w-4 h-4" />
+                  View Progress
+                </button>
+              ) : (
+                <button
+                  onClick={handleDynamicAssess}
+                  disabled={dynamicLoading || generatingFactors || !dynamicInmateId}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium"
+                >
+                  {dynamicLoading || generatingFactors ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Run Assessment
+                </button>
+              )}
             </div>
 
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Selected factors ({selectedFactors.length}) — Enter values (0–1) for each
-              </p>
-              <FactorSelector
-                factors={availableFactors}
-                selected={selectedFactors}
-                values={factorValues}
-                onChange={setSelectedFactors}
-                onValueChange={(k, v) => setFactorValues((prev) => ({ ...prev, [k]: v }))}
-              />
-            </div>
+            {hasActiveProfile ? (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg flex items-center gap-3">
+                <CheckCircle className="w-5 h-5" />
+                <p className="text-sm font-medium">This inmate is already enrolled in a rehabilitation program.</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Selected factors ({selectedFactors.length}) — Enter values (0–1) for each
+                </p>
+                <FactorSelector
+                  factors={availableFactors}
+                  selected={selectedFactors}
+                  values={factorValues}
+                  onChange={setSelectedFactors}
+                  onValueChange={(k, v) => setFactorValues((prev) => ({ ...prev, [k]: v }))}
+                />
+              </div>
+            )}
 
             {/* Dynamic result */}
             {dynamicResult && (

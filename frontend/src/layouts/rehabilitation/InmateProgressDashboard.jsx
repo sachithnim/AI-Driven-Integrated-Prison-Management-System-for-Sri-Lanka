@@ -36,6 +36,7 @@ import {
   Calendar,
   Award,
   Home,
+  HeartPulse,
 } from "lucide-react";
 
 /* ─── helpers ───────────────────────────────────────────────────────────────── */
@@ -117,6 +118,7 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
   const [inmates, setInmates] = useState([]);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [reassessing, setReassessing] = useState(false);
   const [error, setError] = useState(null);
 
   const load = async (id = inmateId) => {
@@ -144,6 +146,69 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propId]);
 
+  /* Re-assess eligibility using stored profile factor values */
+  const handleReassess = async () => {
+    if (!inmateId) return;
+    try {
+      setReassessing(true);
+
+      // 1. Fetch current rehab profile (factor values)
+      const profileRes = await BackendRehabService.getAllProfiles();
+      const profile = profileRes?.find?.((p) => String(p.inmateId) === String(inmateId));
+      const storedFactors = profile?.factorValues || {};
+
+      const factorKeys = Object.keys(storedFactors);
+      if (factorKeys.length === 0) {
+        alert("No factor values found. Run an initial assessment from the Rehabilitation page first.");
+        return;
+      }
+
+      // 2. Fetch fresh inmate data to update behavior/discipline scores
+      try {
+        const allInmates = await InmateService.getAllInmates();
+        const inmate = allInmates?.find?.((i) => String(i.id) === String(inmateId));
+        if (inmate) {
+          // Normalize behavior/discipline from 0-100 scale to 0-1
+          if (inmate.behaviorScore != null) {
+            storedFactors.behavior_score = Math.min(1.0, inmate.behaviorScore / 100.0);
+          }
+          if (inmate.disciplineScore != null) {
+            storedFactors.discipline_score = Math.min(1.0, inmate.disciplineScore / 100.0);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not refresh inmate scores:", e);
+      }
+
+      // 3. Map old/invalid DB factor keys to the valid ones required by the AI service
+      const filteredFactors = {};
+      Object.keys(storedFactors).forEach((key) => {
+        let aiKey = key;
+        // The backend DB stores some factors with different names than what the Python AI expects
+        if (key === "counseling_score") aiKey = "avg_counseling_score";
+        if (key === "time_served_ratio") aiKey = "percent_sentence_served";
+        if (key === "medical_compliance") aiKey = "requires_medical_attention"; // Approximate mapping
+
+        filteredFactors[aiKey] = storedFactors[key];
+      });
+
+      // 4. Run eligibility assessment with updated, valid factors
+      await BackendRehabService.assessDynamicEligibility({
+        inmateId: inmateId,
+        selectedFactors: Object.keys(filteredFactors),
+        factorValues: filteredFactors,
+      });
+
+      // 5. Reload dashboard
+      await load(inmateId);
+    } catch (err) {
+      console.error("Re-assessment failed:", err);
+      alert("Failed to re-assess eligibility. Ensure the AI service is running.");
+    } finally {
+      setReassessing(false);
+    }
+  };
+
   /* radar data */
   const radarData = data
     ? [
@@ -152,6 +217,7 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
         { dimension: "Program", score: data.programProgressScore ?? 0 },
         { dimension: "Eligibility", score: data.eligibilityScore ?? 0 },
         { dimension: "Safety", score: data.riskScore ?? 0 },
+        { dimension: "Medical", score: data.medicalScore ?? 0 },
       ]
     : [];
 
@@ -165,6 +231,10 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
     date: formatDate(p.date),
   }));
   const eligibilityTrend = (data?.eligibilityTrend ?? []).map((p) => ({
+    ...p,
+    date: formatDate(p.date),
+  }));
+  const medicalTrend = (data?.medicalTrend ?? []).map((p) => ({
     ...p,
     date: formatDate(p.date),
   }));
@@ -231,17 +301,32 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
             <div>
               <h2 className="text-xl font-bold">Rehabilitation Progress</h2>
               <p className="text-blue-200 text-sm mt-0.5">Inmate #{inmateId}</p>
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {data.currentlyEligible ? (
                   <span className="flex items-center gap-1.5 bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     <CheckCircle className="w-3.5 h-3.5" /> Eligible for Rehabilitation
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  <span className="flex items-center gap-1.5 bg-red-500/80 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     <XCircle className="w-3.5 h-3.5" /> Not Currently Eligible
                   </span>
                 )}
+                <button
+                  onClick={handleReassess}
+                  disabled={reassessing}
+                  className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur text-white text-xs font-medium px-3 py-1 rounded-full transition-colors disabled:opacity-50"
+                  title="Re-run eligibility assessment with latest data"
+                >
+                  <RefreshCw className={`w-3 h-3 ${reassessing ? 'animate-spin' : ''}`} />
+                  {reassessing ? 'Assessing…' : 'Re-assess'}
+                </button>
               </div>
+              {!data.currentlyEligible && (data.overallProgressScore ?? 0) > 50 && (
+                <p className="text-blue-200 text-xs mt-2 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Progress score is {Math.round(data.overallProgressScore)}% — eligibility may be outdated. Click "Re-assess" to update.
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-center">
               <div className="text-5xl font-extrabold">{Math.round(data.overallProgressScore ?? 0)}</div>
@@ -256,9 +341,10 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
           </div>
 
           {/* Row 2 – stat cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <StatCard icon={Activity} label="Counseling Sessions" value={data.totalCounselingSessions ?? 0} color="purple" />
             <StatCard icon={TrendingUp} label="Progress Logs" value={data.totalProgressLogs ?? 0} color="blue" />
+            <StatCard icon={HeartPulse} label="Medical Reports" value={data.totalMedicalReports ?? 0} color="rose" />
             <StatCard icon={Brain} label="Assessments" value={data.totalEligibilityAssessments ?? 0} color="amber" />
             <StatCard icon={CheckCircle} label="Programs Done" value={data.programsCompleted ?? 0} color="green" />
             <StatCard
@@ -273,7 +359,7 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Radar */}
             <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">5-Dimension Assessment</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">6-Dimension Assessment</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <RadarChart data={radarData}>
                   <PolarGrid />
@@ -300,6 +386,7 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
                 <ScoreRing value={data.programProgressScore ?? 0} label="Program" color="#10b981" />
                 <ScoreRing value={data.eligibilityScore ?? 0} label="Eligibility" color="#3b82f6" />
                 <ScoreRing value={data.riskScore ?? 0} label="Safety" color="#f59e0b" />
+                <ScoreRing value={data.medicalScore ?? 0} label="Medical" color="#e11d48" />
               </div>
             </div>
           </div>
@@ -388,6 +475,43 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
             )}
           </div>
 
+          {/* Medical Report Trend */}
+          {medicalTrend.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <HeartPulse className="w-4 h-4 text-rose-600" /> Medical Report History
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={medicalTrend}>
+                  <defs>
+                    <linearGradient id="medGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#e11d48" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#e11d48" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <Tooltip
+                    formatter={(v, name, entry) => [
+                      `${v}`,
+                      `Score${entry.payload.diagnosis ? ' — ' + entry.payload.diagnosis : ''}`,
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#e11d48"
+                    strokeWidth={2}
+                    fill="url(#medGrad)"
+                    dot={{ r: 4, fill: "#e11d48" }}
+                    activeDot={{ r: 6 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Row 6 – AI reasoning panel */}
           {data.latestReasonExplainer && (
             <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
@@ -459,17 +583,17 @@ export default function InmateProgressDashboard({ inmateId: propId }) {
               {/* Overall readiness banner */}
               {(data.predictions.overall_readiness_score ?? data.predictions.overallReadinessScore) != null && (
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white flex items-center justify-between">
-                  {/* <div>
+                  <div>
                     <p className="text-purple-200 text-xs">Overall Readiness Score</p>
                     <p className="text-3xl font-bold mt-0.5">
-                      {Math.round((data.predictions.overall_readiness_score ?? data.predictions.overallReadinessScore) * 100)}%
+                      {Math.round((data.predictions.overall_readiness_score ?? data.predictions.overallReadinessScore))}%
                     </p>
-                  </div> */}
-                  {/* {data.predictions.priority_recommendation && (
+                  </div>
+                  {data.predictions.priority_recommendation && (
                     <p className="text-sm text-purple-100 max-w-xs text-right">
                       {data.predictions.priority_recommendation}
                     </p>
-                  )} */}
+                  )}
                 </div>
               )}
 

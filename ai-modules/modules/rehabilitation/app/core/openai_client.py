@@ -37,7 +37,7 @@ class OpenAIClient:
             self.temperature = settings.OPENAI_TEMPERATURE
         else:
             self.api_key = api_key or os.getenv('OPENAI_API_KEY')
-            self.model = os.getenv('OPENAI_MODEL', 'gpt-4-turbo-preview')
+            self.model = os.getenv('OPENAI_MODEL', 'gpt-4o')
             self.max_tokens = int(os.getenv('OPENAI_MAX_TOKENS', '300'))
             self.temperature = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
         

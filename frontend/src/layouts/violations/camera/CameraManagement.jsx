@@ -27,7 +27,7 @@ export default function CameraManagement() {
 
   const fetchCameras = async () => {
     try {
-      const resp = await fetch("/api/v1/cameras/");
+      const resp = await fetch("http://localhost:8003/api/v1/cameras/");
       if (resp.ok) {
         const data = await resp.json();
         setCameras(data.sort((a, b) => a.location.localeCompare(b.location)));
@@ -50,7 +50,7 @@ export default function CameraManagement() {
 
     setIsSubmitting(true);
     try {
-      const resp = await fetch("/api/v1/cameras/", {
+      const resp = await fetch("http://localhost:8003/api/v1/cameras/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Notice we are assuming the backend schema still accepts just 'location'.

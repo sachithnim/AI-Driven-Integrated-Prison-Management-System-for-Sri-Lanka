@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import BackendRehabService from "../../services/rehab/backendRehabService";
 import InmateService from "../../services/inmate/inmateService";
-import { MapPin, Navigation, RefreshCw, User, Clock, AlertTriangle, Bell, Target, Check } from "lucide-react";
+import { MapPin, Navigation, RefreshCw, User, Clock, AlertTriangle, Bell, Target, Check, X } from "lucide-react";
 import { useSearchParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -54,6 +54,30 @@ const RADIUS_PRESETS = [
   { label: "5km",        value: 5000 },
 ];
 
+const COLOMBO_TIMEZONE = "Asia/Colombo";
+const SRI_LANKA_OFFSET_MINUTES = 5 * 60 + 30;
+
+function parseServerDateTime(value) {
+  if (!value) return null;
+  let raw = String(value).trim().replace(",", ".");
+  
+  // Ensure we use 'T' instead of space for ISO format compatibility
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(raw)) {
+    raw = raw.replace(" ", "T");
+  }
+
+  const hasTimeZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(raw);
+
+  // If the backend sends a timestamp without a timezone (like LocalDateTime),
+  // we assume it is UTC because the server runs in UTC.
+  if (!hasTimeZone) {
+    raw += "Z";
+  }
+
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function MapClickHandler({ active, onMapClick }) {
   useMapEvents({
     click: (e) => { if (active) onMapClick(e.latlng); },
@@ -61,12 +85,16 @@ function MapClickHandler({ active, onMapClick }) {
   return null;
 }
 
-// Component to recenter map when needed
-function RecenterMap({ center }) {
+// Component to control map view
+function MapController({ center, bounds, zoom = 15 }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView(center, 13, { animate: true });
-  }, [center, map]);
+    if (bounds && bounds.isValid && bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
+    } else if (center) {
+      map.setView(center, zoom, { animate: true });
+    }
+  }, [center, bounds, zoom, map]);
   return null;
 }
 
@@ -82,12 +110,29 @@ export default function InmateMapView() {
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [mapCenter, setMapCenter] = useState([7.8731, 80.7718]); // Sri Lanka centre
+  const [mapBounds, setMapBounds] = useState(null);
+  const [mapZoom, setMapZoom] = useState(15);
+  const initialFitDone = useRef(false);
   // Geofence setter
   const [geofenceSetMode, setGeofenceSetMode] = useState(false);
   const [pendingGeofence, setPendingGeofence] = useState(null); // { lat, lng }
   const [geofenceRadius, setGeofenceRadius]   = useState(50);   // default 50m for easy testing
   const [savingGeofence, setSavingGeofence]   = useState(false);
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
   const autoRefreshRef = useRef(null);
+  const markerRefs = useRef({});
+
+  // Open popup automatically when a leave is selected from the list
+  useEffect(() => {
+    if (selectedLeave) {
+      setTimeout(() => {
+        const marker = markerRefs.current[selectedLeave.id];
+        if (marker && marker.openPopup) {
+          marker.openPopup();
+        }
+      }, 300); // 300ms delay to wait for map pan/zoom animation to finish
+    }
+  }, [selectedLeave]);
 
   const loadData = useCallback(async () => {
     try {
@@ -116,13 +161,29 @@ export default function InmateMapView() {
       );
       setGpsHistories(histories);
 
-      // Focus on specified leave if provided
-      if (focusLeaveId) {
-        const target = all.find((l) => l.id === focusLeaveId);
-        if (target?.lastKnownLat && target?.lastKnownLng) {
-          setMapCenter([target.lastKnownLat, target.lastKnownLng]);
+      // Focus on specified leave if provided or auto-fit bounds
+      if (!initialFitDone.current) {
+        if (focusLeaveId) {
+          const target = all.find((l) => l.id === focusLeaveId);
+          if (target?.lastKnownLat && target?.lastKnownLng) {
+            setMapCenter([target.lastKnownLat, target.lastKnownLng]);
+            setMapBounds(null);
+          }
+          setSelectedLeave((prev) => prev ?? target ?? null);
+        } else {
+          const leavesWithPos = all.filter((l) => l.lastKnownLat && l.lastKnownLng);
+          if (leavesWithPos.length > 0) {
+            const bounds = L.latLngBounds(leavesWithPos.map(l => [l.lastKnownLat, l.lastKnownLng]));
+            setMapBounds(bounds);
+            setMapCenter(null);
+          }
         }
-        setSelectedLeave((prev) => prev ?? target ?? null);
+        initialFitDone.current = true;
+      } else {
+        if (focusLeaveId && !selectedLeave) {
+          const target = all.find((l) => l.id === focusLeaveId);
+          if (target) setSelectedLeave(target);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -149,6 +210,8 @@ export default function InmateMapView() {
     setSelectedLeave(leave);
     if (leave.lastKnownLat && leave.lastKnownLng) {
       setMapCenter([leave.lastKnownLat, leave.lastKnownLng]);
+      setMapBounds(null);
+      setMapZoom(18); // Zoom in closely to see only this inmate's vicinity
     }
   };
 
@@ -189,26 +252,70 @@ export default function InmateMapView() {
     }
   };
 
+  const handleFocusAlert = (alert) => {
+    const targetLeave = allLeaves.find((l) => l.id === alert.homeLeaveId);
+    if (!targetLeave) {
+      toast.error("Could not locate related home leave on map");
+      return;
+    }
+    handleMarkerClick(targetLeave);
+    toast.success("Focused on alert location");
+  };
+
   // Quick lookup sets
   const alertedLeaveIds = new Set(geofenceAlerts.map((a) => a.homeLeaveId));
   const leavesWithPosition = allLeaves.filter((l) => l.lastKnownLat && l.lastKnownLng);
+  const sortedAlerts = useMemo(() => {
+    return [...geofenceAlerts].sort((a, b) => {
+      const severityRank = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
+      const sevDiff = (severityRank[b.severity] ?? 0) - (severityRank[a.severity] ?? 0);
+      if (sevDiff !== 0) return sevDiff;
+
+      const timeB = parseServerDateTime(b.alertedAt)?.getTime() ?? 0;
+      const timeA = parseServerDateTime(a.alertedAt)?.getTime() ?? 0;
+      return timeB - timeA;
+    });
+  }, [geofenceAlerts]);
+  const criticalAlertCount = sortedAlerts.filter((a) => a.severity === "CRITICAL").length;
 
   const formatTime = (iso) => {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " " + d.toLocaleDateString();
+    const d = parseServerDateTime(iso);
+    if (!d) return "—";
+    return d.toLocaleString("en-LK", {
+      timeZone: COLOMBO_TIMEZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
   };
 
   const minutesSince = (iso) => {
-    if (!iso) return null;
-    return Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    const d = parseServerDateTime(iso);
+    if (!d) return null;
+    return Math.round((Date.now() - d.getTime()) / 60000);
+  };
+
+  const formatRelativeTime = (iso) => {
+    const mins = minutesSince(iso);
+    if (mins === null) return "—";
+    if (mins <= 0) return "just now";
+    if (mins === 1) return "1 min ago";
+    if (mins < 60) return `${mins} min ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours === 1) return "1 hour ago";
+    const rem = mins % 60;
+    return rem ? `${hours}h ${rem}m ago` : `${hours} hours ago`;
   };
 
   return (
     <div className="flex h-[calc(100vh-120px)] gap-4">
       {/* Left panel */}
-      <div className="w-80 flex flex-col gap-3 overflow-y-auto">
-        <div className="flex items-center justify-between">
+      <div className="w-80 flex flex-col gap-3 h-full overflow-hidden">
+        <div className="flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Navigation size={20} className="text-emerald-600" />
             Live GPS Map
@@ -222,116 +329,32 @@ export default function InmateMapView() {
           </button>
         </div>
 
-        {/* Geofence Alerts Panel */}
+        {/* Geofence Alerts Summary Button */}
         {geofenceAlerts.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
-            <div className="px-3 py-2 bg-red-100 border-b border-red-200 flex items-center gap-1.5">
-              <Bell size={12} className="text-red-600 animate-bounce" />
-              <span className="text-xs font-bold text-red-700">
-                Geofence Alerts ({geofenceAlerts.length})
-              </span>
+          <button 
+            onClick={() => setShowAlertsModal(true)}
+            className="w-full bg-red-50 hover:bg-red-100 border-2 border-red-400 rounded-xl p-3 flex items-center justify-between transition group shadow-sm flex-shrink-0"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Bell size={20} className="text-red-600 animate-bounce" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-red-700">Geofence Alerts</p>
+                <p className="text-xs text-red-600 font-medium">{geofenceAlerts.length} Active</p>
+              </div>
             </div>
-            <div className="divide-y divide-red-100 max-h-48 overflow-y-auto">
-              {geofenceAlerts.map((alert) => (
-                <div key={alert.id} className="px-3 py-2 flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[11px] font-bold ${
-                      alert.severity === "CRITICAL" ? "text-red-700" : "text-orange-600"
-                    }`}>
-                      {alert.severity === "CRITICAL" ? "🚨" : "⚠️"} {alert.severity}
-                    </p>
-                    <p className="text-[10px] text-red-600 font-medium truncate">{getInmateName(alert.inmateId)}</p>
-                    <p className="text-[10px] text-gray-500">
-                      {Math.round(alert.distanceFromCenter)}m from center
-                      &nbsp;(limit: {Math.round(alert.allowedRadius)}m)
-                    </p>
-                    <p className="text-[9px] text-gray-400">{formatTime(alert.alertedAt)}</p>
-                  </div>
-                  <button
-                    onClick={() => handleAcknowledgeAlert(alert.id)}
-                    className="flex-shrink-0 p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded transition"
-                    title="Acknowledge alert"
-                  >
-                    <Check size={11} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+            {criticalAlertCount > 0 && (
+              <div className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm">
+                {criticalAlertCount} CRITICAL
+              </div>
+            )}
+          </button>
         )}
-
-        {/* Legend */}
-        <div className="bg-white rounded-xl border border-gray-200 p-3 text-xs space-y-1.5">
-          <p className="font-semibold text-gray-600 mb-2">Map Legend</p>
-          {Object.entries(STATUS_COLORS).map(([s, c]) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ background: c }} />
-              <span className="text-gray-600">{s}</span>
-            </div>
-          ))}
-          <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
-            <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-            <span className="text-gray-500">Red dot = geofence alert</span>
-          </div>
-        </div>
-
-        {/* Active leave list */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-3 py-2 border-b border-gray-100 text-xs font-semibold text-gray-600 bg-gray-50">
-            Active Leaves ({activeLeaves.length})
-          </div>
-          {loading ? (
-            <div className="p-4 text-center text-sm text-gray-400">Loading…</div>
-          ) : activeLeaves.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-400">No active home leaves</div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {activeLeaves.map((leave) => {
-                const mins = minutesSince(leave.lastLocationUpdate);
-                const stale = mins !== null && mins > 30;
-                return (
-                  <button
-                    key={leave.id}
-                    onClick={() => handleMarkerClick(leave)}
-                    className={`w-full text-left px-3 py-2.5 hover:bg-gray-50 transition ${
-                      selectedLeave?.id === leave.id ? "bg-emerald-50 border-l-2 border-emerald-500" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <User size={12} className="text-gray-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-xs font-semibold text-gray-800 flex items-center gap-1">
-                              {getInmateName(leave.inmateId)}
-                              {alertedLeaveIds.has(leave.id) && (
-                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" title="Geofence alert" />
-                              )}
-                            </p>
-                          <p className="text-[10px] text-gray-400">{leave.inmateId}</p>
-                        </div>
-                      </div>
-                      {stale && (
-                        <AlertTriangle size={12} className="text-amber-500 flex-shrink-0 mt-0.5" title="No update for 30+ min" />
-                      )}
-                    </div>
-                    {leave.lastLocationUpdate ? (
-                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                        <Clock size={9} />
-                        Last seen {mins !== null ? `${mins} min ago` : "—"}
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-gray-400 mt-1">No GPS yet</p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         {/* Selected leave detail */}
         {selectedLeave && (
-          <div className="bg-white rounded-xl border border-gray-200 p-3 text-xs space-y-1.5">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 text-xs space-y-1.5 flex-shrink-0 overflow-y-auto max-h-[45%]">
             <p className="font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
               <MapPin size={12} className="text-indigo-500" /> Leave Detail
             </p>
@@ -433,9 +456,63 @@ export default function InmateMapView() {
           </div>
         )}
 
+        {/* Active leave list */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col flex-1 min-h-0">
+          <div className="px-3 py-2 border-b border-gray-100 text-xs font-semibold text-gray-600 bg-gray-50 flex-shrink-0">
+            Active Leaves ({activeLeaves.length})
+          </div>
+          {loading ? (
+            <div className="p-4 text-center text-sm text-gray-400 flex-shrink-0">Loading…</div>
+          ) : activeLeaves.length === 0 ? (
+            <div className="p-4 text-center text-sm text-gray-400 flex-shrink-0">No active home leaves</div>
+          ) : (
+            <div className="divide-y divide-gray-100 flex-1 overflow-y-auto">
+              {activeLeaves.map((leave) => {
+                const mins = minutesSince(leave.lastLocationUpdate);
+                const stale = mins !== null && mins > 30;
+                return (
+                  <button
+                    key={leave.id}
+                    onClick={() => handleMarkerClick(leave)}
+                    className={`w-full text-left px-3 py-2.5 hover:bg-gray-50 transition ${
+                      selectedLeave?.id === leave.id ? "bg-emerald-50 border-l-2 border-emerald-500" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <User size={12} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-xs font-semibold text-gray-800 flex items-center gap-1">
+                              {getInmateName(leave.inmateId)}
+                              {alertedLeaveIds.has(leave.id) && (
+                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" title="Geofence alert" />
+                              )}
+                            </p>
+                          <p className="text-[10px] text-gray-400">{leave.inmateId}</p>
+                        </div>
+                      </div>
+                      {stale && (
+                        <AlertTriangle size={12} className="text-amber-500 flex-shrink-0 mt-0.5" title="No update for 30+ min" />
+                      )}
+                    </div>
+                    {leave.lastLocationUpdate ? (
+                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                        <Clock size={9} />
+                        Last seen {formatRelativeTime(leave.lastLocationUpdate)}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 mt-1">No GPS yet</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <Link
           to="/home-leave"
-          className="text-xs text-indigo-600 hover:underline text-center"
+          className="text-xs text-indigo-600 hover:underline text-center flex-shrink-0 pb-2"
         >
           ← Back to Home Leave Management
         </Link>
@@ -456,11 +533,11 @@ export default function InmateMapView() {
           </div>
         ) : (
           <MapContainer
-            center={mapCenter}
+            center={mapCenter || [7.8731, 80.7718]}
             zoom={8}
             style={{ height: "100%", width: "100%" }}
           >
-            <RecenterMap center={mapCenter} />
+            <MapController center={mapCenter} bounds={mapBounds} zoom={mapZoom} />
             <MapClickHandler active={geofenceSetMode} onMapClick={handleMapClick} />
 
             <TileLayer
@@ -472,6 +549,11 @@ export default function InmateMapView() {
             {leavesWithPosition.map((leave) => (
               <Marker
                 key={leave.id}
+                ref={(m) => {
+                  if (m) {
+                    markerRefs.current[leave.id] = m;
+                  }
+                }}
                 position={[leave.lastKnownLat, leave.lastKnownLng]}
                 icon={coloredIcon(STATUS_COLORS[leave.status] || "#6b7280", alertedLeaveIds.has(leave.id))}
                 eventHandlers={{ click: () => handleMarkerClick(leave) }}
@@ -547,7 +629,87 @@ export default function InmateMapView() {
               ))}
           </MapContainer>
         )}
+
+        {/* Legend Over Map */}
+        <div className="absolute bottom-6 right-6 z-[400] bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-gray-200 text-xs flex gap-4 items-center">
+          <span className="font-semibold text-gray-700 mr-2 border-r border-gray-200 pr-3">Legend</span>
+          {Object.entries(STATUS_COLORS).map(([s, c]) => (
+            <div key={s} className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-full" style={{ background: c }} />
+              <span className="text-gray-600 font-medium">{s}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3">
+            <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
+            <span className="text-red-600 font-bold">Geofence Alert</span>
+          </div>
+        </div>
       </div>
+
+      {/* Geofence Alerts Modal */}
+      {showAlertsModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-red-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle size={24} className="text-white animate-pulse" />
+                <div>
+                  <h2 className="text-lg font-bold">Critical Geofence Alerts</h2>
+                  <p className="text-red-100 text-xs font-medium">Immediate action required for inmates outside allowed zones</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAlertsModal(false)} className="p-2 bg-red-700/50 hover:bg-red-700 rounded-lg transition text-white">
+                <X size={20} />
+              </button>
+            </div>
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
+              <div className="grid gap-4">
+                {sortedAlerts.map((alert) => (
+                  <div key={alert.id} className={`bg-white rounded-xl border-2 p-4 flex items-center justify-between shadow-sm ${alert.severity === "CRITICAL" ? "border-red-400" : "border-orange-300"}`}>
+                    <div className="flex gap-4 items-center">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${alert.severity === "CRITICAL" ? "bg-red-100" : "bg-orange-100"}`}>
+                        <User size={24} className={alert.severity === "CRITICAL" ? "text-red-600" : "text-orange-600"} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${alert.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
+                            {alert.severity}
+                          </span>
+                          <span className="text-[11px] text-gray-500">{formatRelativeTime(alert.alertedAt)} • {formatTime(alert.alertedAt)}</span>
+                        </div>
+                        <h3 className="text-base font-bold text-gray-900">{getInmateName(alert.inmateId)}</h3>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          Currently <span className="font-bold text-gray-900">{Math.round(alert.distanceFromCenter)}m</span> from center 
+                          (allowed limit: <span className="font-medium">{Math.round(alert.allowedRadius)}m</span>)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          handleFocusAlert(alert);
+                          setShowAlertsModal(false);
+                        }}
+                        className="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-semibold transition flex items-center gap-2"
+                      >
+                        <MapPin size={16} /> Locate
+                      </button>
+                      <button
+                        onClick={() => handleAcknowledgeAlert(alert.id)}
+                        className="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-semibold transition flex items-center gap-2"
+                      >
+                        <Check size={16} /> Acknowledge
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

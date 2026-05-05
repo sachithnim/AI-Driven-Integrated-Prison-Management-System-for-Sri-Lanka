@@ -88,7 +88,7 @@ export default function CCTVGrid() {
 
   const fetchCameras = async () => {
     try {
-      const resp = await fetch("/api/v1/cameras/");
+      const resp = await fetch("http://localhost:8003/api/v1/cameras/");
       if (resp.ok) {
         const data = await resp.json();
         const sorted = data.sort((a, b) =>

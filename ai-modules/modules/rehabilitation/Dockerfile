@@ -3,7 +3,12 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Install system dependencies required by scipy/numpy/sklearn
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list; \
+    fi; \
+    find /etc/apt -name '*.sources' -type f -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' {} +; \
+    apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     build-essential \

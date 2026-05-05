@@ -25,6 +25,7 @@ public class ProgressSummaryDTO {
     private Double programProgressScore; // avg of progress logs percentage
     private Double eligibilityScore;     // latest eligibility score * 100
     private Double riskScore;            // (1 - riskScore) * 100  (inverted for display)
+    private Double medicalScore;         // medical compliance score based on reports
 
     // Trend series for charts
     /** [{date, score}] from progress logs */
@@ -33,11 +34,14 @@ public class ProgressSummaryDTO {
     private List<Map<String, Object>> counselingTrend;
     /** [{date, score}] from eligibility assessments */
     private List<Map<String, Object>> eligibilityTrend;
+    /** [{date, score}] from medical reports */
+    private List<Map<String, Object>> medicalTrend;
 
     // Counts
     private Integer totalCounselingSessions;
     private Integer totalProgressLogs;
     private Integer totalEligibilityAssessments;
+    private Integer totalMedicalReports;
     private Integer programsCompleted;
 
     // Latest assessment detail

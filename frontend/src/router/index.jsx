@@ -22,6 +22,7 @@ import SurveyCamera from "../layouts/survey/SurveyCamera";
 import SupportDocs from "../layouts/survey/SupportDocs";
 import InmatesHistory from "../layouts/wellness/InmatesHistory";
 import CommonDocs from "../layouts/wellness/CommonDocs";
+import Staff from "../layouts/staff/Staff";
 
 
 export const router = createBrowserRouter([
@@ -131,6 +132,10 @@ export const router = createBrowserRouter([
         path: "/incidents",
         element: <Incidents />,
       },
+      {
+        path: "/staff",
+        element: <Staff />
+      }
     ],
   },
   {

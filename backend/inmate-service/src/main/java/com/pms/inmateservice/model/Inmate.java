@@ -199,12 +199,19 @@ public class Inmate {
     @Column(nullable = false)
     private InmateStatus status = InmateStatus.ACTIVE;
 
-    // Media
+    // Media - Image Storage
     @Column(length = 500)
-    private String photoUrl;
+    private String closeFaceImagePath; // Path to close-up face photo
 
     @Column(length = 500)
-    private String fingerprintsUrl;
+    private String fullBodyImagePath; // Path to full body photo
+
+    @Column(length = 500)
+    private String fingerprintsImagePath; // Path to fingerprints image
+
+    // Image metadata for physical characteristics
+    @Column(length = 50)
+    private String imageUploadDate; // Date when images were uploaded
 
     // Relationships (One-to-Many)
     @OneToMany(mappedBy = "inmate", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -31,7 +31,7 @@ export default function IncidentTable() {
 
   const fetchCameras = async () => {
     try {
-      const response = await fetch("/api/v1/cameras/");
+      const response = await fetch("http://localhost:8003/api/v1/cameras/");
       if (response.ok) {
         const data = await response.json();
         const cameraMap = {};
@@ -56,7 +56,7 @@ export default function IncidentTable() {
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
       if (severityFilter) params.set("severity", severityFilter);
 
-      const response = await fetch(`/api/v1/incidents/?${params.toString()}`);
+      const response = await fetch(`http://localhost:8003/api/v1/incidents/?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setIncidents(data);

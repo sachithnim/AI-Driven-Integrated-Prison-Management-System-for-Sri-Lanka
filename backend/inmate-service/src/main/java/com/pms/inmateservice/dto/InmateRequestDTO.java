@@ -105,10 +105,6 @@ public class InmateRequestDTO {
     // Status
     private InmateStatus status;
 
-    // Media
-    private String photoUrl;
-    private String fingerprintsUrl;
-
     // Notes
     private String notes;
 }

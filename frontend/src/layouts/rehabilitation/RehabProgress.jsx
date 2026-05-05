@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import BackendRehabService from "../../services/rehab/backendRehabService";
 import InmateService from "../../services/inmate/inmateService";
+import StaffService from "../../services/inmate/staffService";
 import InmateProgressDashboard from "./InmateProgressDashboard";
 import {
   Loader2,
@@ -13,10 +15,12 @@ import {
   ArrowLeft,
   Send,
   FileImage,
+  HeartPulse,
 } from "lucide-react";
 
 const TABS = [
   { id: "counseling", label: "Counseling Analysis", icon: MessageSquare },
+  { id: "medical", label: "Medical Report", icon: HeartPulse },
   { id: "progress", label: "Progress Log", icon: Activity },
   { id: "dashboard", label: "Progress Dashboard", icon: BarChart2 },
 ];
@@ -42,10 +46,12 @@ const SentimentBadge = ({ sentiment }) => {
 function CounselingTab() {
   const [inmateId, setInmateId] = useState("");
   const [inmates, setInmates] = useState([]);
+  const [counselors, setCounselors] = useState([]);
   const [counselorId, setCounselorId] = useState("");
 
   useEffect(() => {
     InmateService.getAllInmates().then(setInmates).catch(console.error);
+    StaffService.getStaffByRole("COUNSELOR").then(setCounselors).catch(console.error);
   }, []);
   const [sessionType, setSessionType] = useState("individual");
   const [sessionScore, setSessionScore] = useState("");
@@ -106,15 +112,20 @@ function CounselingTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Counselor ID
+              Counselor <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               value={counselorId}
               onChange={(e) => setCounselorId(e.target.value)}
-              placeholder="OFF-123"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">-- Select Counselor --</option>
+              {counselors.map((c) => (
+                <option key={c.id} value={c.staffId}>
+                  {c.firstName} {c.lastName} ({c.staffId})
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -277,6 +288,7 @@ function CounselingTab() {
 
 function ProgressTab() {
   const [inmates, setInmates] = useState([]);
+  const [jailors, setJailors] = useState([]);
   const [selectedInmate, setSelectedInmate] = useState("");
   const [recommendations, setRecommendations] = useState([]);
   const [recommendationId, setRecommendationId] = useState("");
@@ -291,6 +303,7 @@ function ProgressTab() {
 
   useEffect(() => {
     InmateService.getAllInmates().then(setInmates).catch(console.error);
+    StaffService.getStaffByRole("JAILOR").then(setJailors).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -441,13 +454,18 @@ function ProgressTab() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Recorded By</label>
-          <input
-            type="text"
+          <select
             value={recordedBy}
             onChange={(e) => setRecordedBy(e.target.value)}
-            placeholder="Officer ID or name"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
+            <option value="">-- Select Officer --</option>
+            {jailors.map((j) => (
+              <option key={j.id} value={j.staffId}>
+                {j.firstName} {j.lastName} ({j.staffId})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -476,8 +494,166 @@ function ProgressTab() {
   );
 }
 
+function MedicalTab() {
+  const [inmates, setInmates] = useState([]);
+  const [medicalOfficers, setMedicalOfficers] = useState([]);
+  const [selectedInmate, setSelectedInmate] = useState("");
+  const [officerId, setOfficerId] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [notes, setNotes] = useState("");
+  const [bloodPressure, setBloodPressure] = useState("");
+  const [heartRate, setHeartRate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    InmateService.getAllInmates().then(setInmates).catch(console.error);
+    StaffService.getStaffByRole("MEDICAL_OFFICER").then(setMedicalOfficers).catch(console.error);
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!selectedInmate || !diagnosis.trim() || !notes.trim()) {
+      alert("Inmate, Diagnosis, and Notes are required.");
+      return;
+    }
+    try {
+      setLoading(true);
+      setSuccess(false);
+      await BackendRehabService.addMedicalReport({
+        inmateId: selectedInmate,
+        officerId,
+        diagnosis,
+        notes,
+        vitals: {
+          bloodPressure: bloodPressure || undefined,
+          heartRate: heartRate ? parseInt(heartRate) : undefined,
+        }
+      });
+      setSuccess(true);
+      setDiagnosis("");
+      setNotes("");
+      setBloodPressure("");
+      setHeartRate("");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit medical report.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <h3 className="font-semibold text-gray-900">Add Medical Report</h3>
+
+      {success && (
+        <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 text-sm">
+          <CheckCircle className="w-4 h-4" />
+          Medical report saved successfully.
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Select Inmate <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={selectedInmate}
+            onChange={(e) => setSelectedInmate(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- Select Inmate --</option>
+            {inmates.map((inmate) => (
+              <option key={inmate.id} value={inmate.id?.toString()}>
+                {inmate.id} — {inmate.firstName} {inmate.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Medical Officer
+          </label>
+          <select
+            value={officerId}
+            onChange={(e) => setOfficerId(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- Select Officer --</option>
+            {medicalOfficers.map((m) => (
+              <option key={m.id} value={m.staffId}>
+                {m.firstName} {m.lastName} ({m.staffId})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Blood Pressure
+          </label>
+          <input
+            type="text"
+            value={bloodPressure}
+            onChange={(e) => setBloodPressure(e.target.value)}
+            placeholder="120/80"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Heart Rate (bpm)
+          </label>
+          <input
+            type="number"
+            value={heartRate}
+            onChange={(e) => setHeartRate(e.target.value)}
+            placeholder="72"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis <span className="text-red-500">*</span></label>
+        <input
+          type="text"
+          value={diagnosis}
+          onChange={(e) => setDiagnosis(e.target.value)}
+          placeholder="Primary diagnosis or condition..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Clinical Notes <span className="text-red-500">*</span></label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          placeholder="Detailed observations, treatment plan, medication prescribed..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors text-sm font-medium"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <HeartPulse className="w-4 h-4" />}
+          {loading ? "Saving…" : "Save Medical Report"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RehabProgress() {
-  const [activeTab, setActiveTab] = useState("counseling");
+  const [searchParams] = useSearchParams();
+  const inmateIdParam = searchParams.get("inmateId");
+  const [activeTab, setActiveTab] = useState(inmateIdParam ? "dashboard" : "counseling");
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -517,8 +693,9 @@ export default function RehabProgress() {
 
       {/* Tab content */}
       {activeTab === "counseling" && <CounselingTab />}
+      {activeTab === "medical" && <MedicalTab />}
       {activeTab === "progress" && <ProgressTab />}
-      {activeTab === "dashboard" && <InmateProgressDashboard />}
+      {activeTab === "dashboard" && <InmateProgressDashboard inmateId={inmateIdParam} />}
     </div>
   );
 }

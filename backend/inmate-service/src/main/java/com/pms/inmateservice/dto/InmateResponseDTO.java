@@ -88,9 +88,11 @@ public class InmateResponseDTO {
     // Status
     private InmateStatus status;
 
-    // Media
-    private String photoUrl;
-    private String fingerprintsUrl;
+    // Media - Image Storage
+    private String closeFaceImagePath;
+    private String fullBodyImagePath;
+    private String fingerprintsImagePath;
+    private String imageUploadDate;
 
     // Audit
     private LocalDateTime createdAt;

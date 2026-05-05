@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Shield, MapPin, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, User, Shield, MapPin, Calendar, FileText, Fingerprint } from 'lucide-react';
 import InmateService from '../../services/inmate/inmateService';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,7 @@ export default function InmateDetail() {
     const navigate = useNavigate();
     const [inmate, setInmate] = useState(null);
     const [loading, setLoading] = useState(true);
+    const backendBase = import.meta.env.VITE_INMATE_SERVICE_URL || '';
 
     useEffect(() => {
         const fetchInmate = async () => {
@@ -47,8 +48,17 @@ export default function InmateDetail() {
 
             <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <div className="flex items-center gap-5">
-                    <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-2xl font-bold">
-                        {inmate.firstName?.[0]}{inmate.lastName?.[0]}
+                    <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-gray-600 text-2xl font-bold">
+                        {inmate.closeFaceImagePath ? (
+                            <img
+                                src={`${backendBase}/inmates/${id}/image/closeFace`}
+                                alt="Close face"
+                                className="h-full w-full object-cover"
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }}
+                            />
+                        ) : (
+                            <>{inmate.firstName?.[0]}{inmate.lastName?.[0]}</>
+                        )}
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">{inmate.firstName} {inmate.lastName}</h1>
@@ -64,7 +74,29 @@ export default function InmateDetail() {
                     </div>
                 </div>
             </div>
-
+            
+            {/* Image gallery */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Photos</h3>
+                <div className="flex gap-4">
+                    <div>
+                        <p className="text-xs text-gray-500 mb-2">Close Face</p>
+                        {inmate.closeFaceImagePath ? (
+                            <img src={`${backendBase}/inmates/${id}/image/closeFace`} alt="Close face" className="w-40 h-40 object-cover rounded-md border" />
+                        ) : (
+                            <div className="w-40 h-40 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">No image</div>
+                        )}
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-500 mb-2">Full Body</p>
+                        {inmate.fullBodyImagePath ? (
+                            <img src={`${backendBase}/inmates/${id}/image/fullBody`} alt="Full body" className="w-40 h-40 object-cover rounded-md border" />
+                        ) : (
+                            <div className="w-40 h-40 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">No image</div>
+                        )}
+                    </div>
+                </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -199,6 +231,39 @@ export default function InmateDetail() {
                         <div>
                             <dt className="text-gray-500">Occupation</dt>
                             <dd className="font-medium text-gray-900">{inmate.occupation || '—'}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                {/* Physical Description */}
+                <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
+                    <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <Fingerprint className="w-5 h-5" /> Physical Description
+                    </h2>
+                    <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <dt className="text-gray-500">Height</dt>
+                            <dd className="font-medium text-gray-900">{inmate.height || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Weight</dt>
+                            <dd className="font-medium text-gray-900">{inmate.weight || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Eye Color</dt>
+                            <dd className="font-medium text-gray-900">{inmate.eyeColor || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="text-gray-500">Hair Color</dt>
+                            <dd className="font-medium text-gray-900">{inmate.hairColor || '—'}</dd>
+                        </div>
+                        <div className="col-span-2">
+                            <dt className="text-gray-500">Identifying Marks</dt>
+                            <dd className="font-medium text-gray-900 mt-1 whitespace-pre-line">{inmate.identifyingMarks || '—'}</dd>
+                        </div>
+                        <div className="col-span-2">
+                            <dt className="text-gray-500">Tattoos</dt>
+                            <dd className="font-medium text-gray-900 mt-1 whitespace-pre-line">{inmate.tattoos || '—'}</dd>
                         </div>
                     </dl>
                 </div>

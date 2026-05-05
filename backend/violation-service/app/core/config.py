@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     
-    # CORS — extend with HTTPS variants and LAN IPs for mobile access
+    # CORS — HTTP-only origins for local and LAN access
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost", "http://localhost:5173", "http://localhost:3000",
-        "https://localhost", "https://localhost:5173",
+        "http://127.0.0.1", "http://127.0.0.1:5173", "http://127.0.0.1:3000",
     ]
 
     class Config:

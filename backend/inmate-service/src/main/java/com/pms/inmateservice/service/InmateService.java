@@ -14,8 +14,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,43 +40,11 @@ public class InmateService {
 
         Inmate inmate = mapToEntity(requestDTO);
         
-        // Call AI Service for Initial Assessment
-        try {
-            Map<String, Object> aiRequest = new HashMap<>();
-            aiRequest.put("crimeDescription", requestDTO.getCrimeDescription() != null ? requestDTO.getCrimeDescription() : "Not specified");
-            aiRequest.put("riskHistory", requestDTO.getRiskHistory() != null ? requestDTO.getRiskHistory() : new String[0]);
-            aiRequest.put("notes", requestDTO.getNotes() != null ? requestDTO.getNotes() : "");
-            // Calculate age if not provided or calculate from DOB
-            int age = 30;
-            if (requestDTO.getDateOfBirth() != null) {
-                age = java.time.Period.between(requestDTO.getDateOfBirth(), LocalDate.now()).getYears();
-            }
-            aiRequest.put("age", age);
-            aiRequest.put("sentenceDurationMonths", requestDTO.getSentenceDurationMonths() != null ? requestDTO.getSentenceDurationMonths() : 12);
-            aiRequest.put("caseType", requestDTO.getCaseType() != null ? requestDTO.getCaseType().toString() : "OTHER");
-
-            Map response = webClientBuilder.build()
-                    .post()
-                    .uri(rehabilitationAiUrl + "/api/v1/scoring/initial-assessment")
-                    .bodyValue(aiRequest)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
-
-            if (response != null) {
-                inmate.setBehaviorScore(Double.valueOf(response.get("behavior_score").toString()));
-                inmate.setDisciplineScore(Double.valueOf(response.get("discipline_score").toString()));
-                inmate.setRiskScore(Double.valueOf(response.get("risk_score").toString()));
-                inmate.setAiReasoning((String) response.get("reasoning"));
-            }
-        } catch (Exception e) {
-            log.error("Failed to get AI assessment", e);
-            // Set defaults if AI fails
-            inmate.setBehaviorScore(70.0);
-            inmate.setDisciplineScore(70.0);
-            inmate.setRiskScore(0.5);
-            inmate.setAiReasoning("AI Assessment Failed: " + e.getMessage());
-        }
+        // AI scoring deferred — set defaults at registration time
+        inmate.setBehaviorScore(70.0);
+        inmate.setDisciplineScore(70.0);
+        inmate.setRiskScore(0.5);
+        inmate.setAiReasoning("Pending AI Assessment");
 
         inmate.setStatus(InmateStatus.ACTIVE);
         inmate.setCreatedAt(java.time.LocalDateTime.now());
@@ -105,6 +71,56 @@ public class InmateService {
         response.setTotalVisits((long) visitorLogRepository.findByInmateId(id).size());
 
         return response;
+    }
+
+    @Transactional
+    public InmateResponseDTO runAiInitialAssessment(Long id) {
+        log.info("Running AI initial assessment for inmate ID: {}", id);
+        Inmate inmate = inmateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inmate not found with ID: " + id));
+
+        try {
+            java.util.Map<String, Object> aiRequest = new java.util.HashMap<>();
+            aiRequest.put("crimeDescription", inmate.getCrimeDescription() != null ? inmate.getCrimeDescription() : "Unknown");
+            aiRequest.put("caseType", inmate.getCaseType() != null ? inmate.getCaseType().toString() : "Unknown");
+            aiRequest.put("sentenceDurationMonths", inmate.getSentenceDurationMonths() != null ? inmate.getSentenceDurationMonths() : 0);
+            aiRequest.put("age", inmate.getAge() != null ? inmate.getAge() : 30);
+            aiRequest.put("riskHistory", java.util.List.of(
+                inmate.getViolentHistory() != null && inmate.getViolentHistory() ? "Violent History" : "",
+                inmate.getEscapeRisk() != null && inmate.getEscapeRisk() ? "Escape Risk" : "",
+                inmate.getGangAffiliation() != null && inmate.getGangAffiliation() ? "Gang Affiliation" : ""
+            ).stream().filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+            aiRequest.put("notes", "Registration assessment");
+
+            java.util.Map response = webClientBuilder.build()
+                    .post()
+                    .uri(rehabilitationAiUrl + "/api/v1/scoring/initial-assessment")
+                    .bodyValue(aiRequest)
+                    .retrieve()
+                    .bodyToMono(java.util.Map.class)
+                    .block();
+
+            if (response != null) {
+                if (response.containsKey("behavior_score")) {
+                    inmate.setBehaviorScore(Double.valueOf(response.get("behavior_score").toString()));
+                }
+                if (response.containsKey("discipline_score")) {
+                    inmate.setDisciplineScore(Double.valueOf(response.get("discipline_score").toString()));
+                }
+                if (response.containsKey("risk_score")) {
+                    inmate.setRiskScore(Double.valueOf(response.get("risk_score").toString()));
+                }
+                if (response.containsKey("reasoning")) {
+                    inmate.setAiReasoning(response.get("reasoning").toString());
+                }
+                inmateRepository.save(inmate);
+                log.info("Successfully updated AI scores for inmate ID: {}", id);
+            }
+        } catch (Exception e) {
+            log.error("Failed to run AI assessment for inmate ID {}: {}", id, e.getMessage());
+        }
+
+        return getInmateById(id);
     }
 
     @Transactional(readOnly = true)
@@ -324,8 +340,6 @@ public class InmateService {
             inmate.setStatus(dto.getStatus());
         }
         
-        inmate.setPhotoUrl(dto.getPhotoUrl());
-        inmate.setFingerprintsUrl(dto.getFingerprintsUrl());
         inmate.setNotes(dto.getNotes());
     }
 
@@ -384,8 +398,10 @@ public class InmateService {
         dto.setSuicideRisk(inmate.getSuicideRisk());
         
         dto.setStatus(inmate.getStatus());
-        dto.setPhotoUrl(inmate.getPhotoUrl());
-        dto.setFingerprintsUrl(inmate.getFingerprintsUrl());
+        dto.setCloseFaceImagePath(inmate.getCloseFaceImagePath());
+        dto.setFullBodyImagePath(inmate.getFullBodyImagePath());
+        dto.setFingerprintsImagePath(inmate.getFingerprintsImagePath());
+        dto.setImageUploadDate(inmate.getImageUploadDate());
         
         dto.setCreatedAt(inmate.getCreatedAt());
         dto.setUpdatedAt(inmate.getUpdatedAt());
@@ -413,32 +429,65 @@ public class InmateService {
         return dto;
     }
 
-    // Kafka event publishing
+    // Kafka event publishing — fire-and-forget, never blocks registration
     private void publishInmateAdmittedEvent(Inmate inmate) {
         try {
-            kafkaTemplate.send("inmate.admitted", inmate.getId().toString(), mapToResponseDTO(inmate));
-            log.info("Published inmate admitted event for ID: {}", inmate.getId());
+            kafkaTemplate.send("inmate.admitted", inmate.getId().toString(), mapToResponseDTO(inmate))
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.warn("Kafka delivery failed for inmate.admitted (ID {}): {}", inmate.getId(), ex.getMessage());
+                        } else {
+                            log.info("Published inmate.admitted event for ID: {}", inmate.getId());
+                        }
+                    });
         } catch (Exception e) {
-            log.error("Failed to publish inmate admitted event", e);
+            log.warn("Kafka unavailable — skipping inmate.admitted event for ID {}: {}", inmate.getId(), e.getMessage());
         }
     }
 
     private void publishInmateReleasedEvent(Inmate inmate) {
         try {
-            kafkaTemplate.send("inmate.released", inmate.getId().toString(), mapToResponseDTO(inmate));
-            log.info("Published inmate released event for ID: {}", inmate.getId());
+            kafkaTemplate.send("inmate.released", inmate.getId().toString(), mapToResponseDTO(inmate))
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.warn("Kafka delivery failed for inmate.released (ID {}): {}", inmate.getId(), ex.getMessage());
+                        } else {
+                            log.info("Published inmate.released event for ID: {}", inmate.getId());
+                        }
+                    });
         } catch (Exception e) {
-            log.error("Failed to publish inmate released event", e);
+            log.warn("Kafka unavailable — skipping inmate.released event for ID {}: {}", inmate.getId(), e.getMessage());
         }
+    }
+
+    @Transactional
+    public void updateInmateImage(Long inmateId, String imageType, String imagePath) {
+        Inmate inmate = inmateRepository.findById(inmateId)
+                .orElseThrow(() -> new RuntimeException("Inmate not found"));
+        
+        if ("closeFace".equals(imageType)) {
+            inmate.setCloseFaceImagePath(imagePath);
+        } else if ("fullBody".equals(imageType)) {
+            inmate.setFullBodyImagePath(imagePath);
+        }
+        
+        inmate.setImageUploadDate(LocalDate.now().toString());
+        inmateRepository.save(inmate);
+        log.info("Updated {} image for inmate ID: {}", imageType, inmateId);
     }
 
     private void publishInmateTransferredEvent(Inmate inmate, String oldFacility, String newFacility) {
         try {
-            kafkaTemplate.send("inmate.transferred", inmate.getId().toString(), 
-                    mapToResponseDTO(inmate));
-            log.info("Published inmate transferred event for ID: {}", inmate.getId());
+            kafkaTemplate.send("inmate.transferred", inmate.getId().toString(), mapToResponseDTO(inmate))
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.warn("Kafka delivery failed for inmate.transferred (ID {}): {}", inmate.getId(), ex.getMessage());
+                        } else {
+                            log.info("Published inmate.transferred event for ID: {}", inmate.getId());
+                        }
+                    });
         } catch (Exception e) {
-            log.error("Failed to publish inmate transferred event", e);
+            log.warn("Kafka unavailable — skipping inmate.transferred event for ID {}: {}", inmate.getId(), e.getMessage());
         }
     }
 }

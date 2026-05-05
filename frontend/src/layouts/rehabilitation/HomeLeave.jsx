@@ -72,10 +72,13 @@ export default function HomeLeave() {
         BackendRehabService.getAllHomeLeaves(),
         InmateService.getAllInmates(),
       ]);
-      setLeaves(data);
+      // Ensure data is always an array
+      const leavesArray = Array.isArray(data) ? data : (data?.data || []);
+      setLeaves(leavesArray);
       setInmates(inmatesData);
     } catch (e) {
       toast.error("Failed to load home leave data");
+      setLeaves([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -135,13 +138,14 @@ export default function HomeLeave() {
     return `${inm.firstName || ""} ${inm.lastName || ""}`.trim() || null;
   };
 
-  const filtered = filterStatus === "ALL" ? leaves : leaves.filter((l) => l.status === filterStatus);
+  const leavesArray = Array.isArray(leaves) ? leaves : [];
+  const filtered = filterStatus === "ALL" ? leavesArray : leavesArray.filter((l) => l.status === filterStatus);
 
   const stats = {
-    pending:   leaves.filter((l) => l.status === "PENDING").length,
-    active:    leaves.filter((l) => l.status === "ACTIVE").length,
-    approved:  leaves.filter((l) => l.status === "APPROVED").length,
-    total:     leaves.length,
+    pending:   leavesArray.filter((l) => l.status === "PENDING").length,
+    active:    leavesArray.filter((l) => l.status === "ACTIVE").length,
+    approved:  leavesArray.filter((l) => l.status === "APPROVED").length,
+    total:     leavesArray.length,
   };
 
   return (
@@ -204,7 +208,7 @@ export default function HomeLeave() {
             {s === "ALL" ? "All" : STATUS_CONFIG[s]?.label}
             {s !== "ALL" && (
               <span className="ml-1 text-[10px] opacity-75">
-                ({leaves.filter((l) => l.status === s).length})
+                ({leavesArray.filter((l) => l.status === s).length})
               </span>
             )}
           </button>
