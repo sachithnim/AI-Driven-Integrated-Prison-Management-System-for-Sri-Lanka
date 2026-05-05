@@ -22,6 +22,6 @@ ultralytics
 tensorflow
 tensorflow-hub
 fvcore
-# av>=11.0.0
+av>=11.0.0
 pytorchvideo
 roboflow

@@ -57,26 +57,32 @@ function AlertCard({ alert }) {
           {new Date(alert.timestamp).toLocaleTimeString()}
         </span>
       </div>
-      <div className="mt-2 text-xs text-slate-600 flex flex-col gap-1">
-        <div className="flex flex-col gap-1 border-b border-slate-200 pb-2 mb-1">
-          <div className="flex justify-between">
-            <span>Weapon: {alert.weapon_name || "None"}</span>
-            <span className={alert.fight_score > 0.3 ? "text-red-600 font-semibold" : "text-slate-500"}>
-              Fight: {alert.fight_score > 0.3 ? "Fight" : "Non-fight"}
+      <div className="mt-3 text-xs flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-y-3 gap-x-3 border-b border-slate-200 pb-3 mb-1">
+          <div className="flex flex-col bg-white/60 p-2 rounded-md shadow-sm border border-slate-200/50">
+            <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold mb-0.5">Weapon</span>
+            <span className={`font-bold text-sm ${alert.weapon_name ? 'text-red-600' : 'text-slate-600'}`}>
+              {alert.weapon_name || "None"}
             </span>
-            <span>Audio: {alert.audio_name || "None"}</span>
           </div>
-          <div className="flex justify-between mt-1">
-            <span>Location: {alert.camera_location || "Unknown"}</span>
-          </div>
-        </div>
-        <div className="flex justify-between items-center mt-1">
-          <span className="text-slate-500 font-medium">Cam ID: {alert.camera_id}</span>
-          {alert.weapon_name && (
-            <span className="text-red-700 font-bold border border-red-200 px-2 py-0.5 rounded bg-red-100">
-              Detected: {alert.weapon_name}
+          <div className="flex flex-col bg-white/60 p-2 rounded-md shadow-sm border border-slate-200/50">
+            <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold mb-0.5">Activity</span>
+            <span className={`font-bold text-sm ${alert.fight_score > 0.3 ? 'text-red-600' : 'text-slate-600'}`}>
+              {alert.fight_score > 0.3 ? "Violence" : "Normal"}
             </span>
-          )}
+          </div>
+          <div className="flex flex-col bg-white/60 p-2 rounded-md shadow-sm border border-slate-200/50">
+            <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold mb-0.5">Audio</span>
+            <span className={`font-bold text-sm ${alert.audio_name ? 'text-orange-600' : 'text-slate-600'}`}>
+              {alert.audio_name || "None"}
+            </span>
+          </div>
+          <div className="flex flex-col overflow-hidden bg-white/60 p-2 rounded-md shadow-sm border border-slate-200/50">
+            <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold mb-0.5">Location</span>
+            <span className="font-bold text-sm text-slate-700 truncate" title={`${alert.camera_location || "Unknown"} (${alert.camera_id})`}>
+              {alert.camera_location || "Unknown"} <span className="text-slate-400 text-[10px] font-normal">({alert.camera_id})</span>
+            </span>
+          </div>
         </div>
         {alert.incident_id && (
           <div className="mt-2 border-t border-slate-200 pt-2">
